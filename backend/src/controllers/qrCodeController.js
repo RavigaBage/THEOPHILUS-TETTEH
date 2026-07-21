@@ -1,0 +1,140 @@
+const QRCode = require('../models/QRCode');
+const InternetLounge = require('../models/InternetLounge');
+const crypto = require('crypto');
+
+exports.generateQRCode = async (req, res, next) => {
+  try {
+    const { label, durationValue, durationUnit } = req.body;
+    
+    // Generate token
+    const token = crypto.randomBytes(16).toString('hex');
+    
+    // Calculate expiresAt
+    const now = new Date();
+    let expiresAt = new Date(now);
+    if (durationUnit === 'minutes') {
+      expiresAt.setMinutes(expiresAt.getMinutes() + Number(durationValue));
+    } else if (durationUnit === 'hours') {
+      expiresAt.setHours(expiresAt.getHours() + Number(durationValue));
+    } else if (durationUnit === 'days') {
+      expiresAt.setDate(expiresAt.getDate() + Number(durationValue));
+    }
+
+    const qrCode = await QRCode.create({
+      token,
+      label,
+      durationValue,
+      durationUnit,
+      expiresAt,
+      createdBy: req.user._id,
+      status: 'active'
+    });
+
+    res.status(201).json({ success: true, data: qrCode });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getQRCodes = async (req, res, next) => {
+  try {
+    const qrcodes = await QRCode.find().populate('createdBy', 'name email').sort({ createdAt: -1 });
+    
+    // Compute live status
+    const now = new Date();
+    const computedList = qrcodes.map(qr => {
+      let isExpired = qr.expiresAt < now || qr.status === 'deactivated';
+      return {
+        ...qr.toObject(),
+        computedStatus: isExpired ? 'Expired' : 'Active'
+      };
+    });
+
+    res.status(200).json({ success: true, data: computedList });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deactivateQRCode = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const qrCode = await QRCode.findByIdAndUpdate(id, { status: 'deactivated', expiresAt: new Date() }, { new: true });
+    if (!qrCode) return res.status(404).json({ error: 'QR Code not found' });
+    res.status(200).json({ success: true, data: qrCode });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteQRCode = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const qrCode = await QRCode.findByIdAndDelete(id);
+    if (!qrCode) return res.status(404).json({ error: 'QR Code not found' });
+    res.status(200).json({ success: true, data: {} });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.validateQRToken = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const qrCode = await QRCode.findOne({ token });
+    if (!qrCode) return res.status(404).json({ error: 'QR Code not found' });
+    
+    const isExpired = qrCode.expiresAt < new Date() || qrCode.status === 'deactivated';
+    if (isExpired) {
+      return res.status(400).json({ error: 'This QR code has expired. Please ask a staff member for a new one.' });
+    }
+    
+    res.status(200).json({ success: true, data: { label: qrCode.label, token: qrCode.token } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.submitAttendance = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const qrCode = await QRCode.findOne({ token });
+    if (!qrCode) return res.status(404).json({ error: 'QR Code not found' });
+    
+    const isExpired = qrCode.expiresAt < new Date() || qrCode.status === 'deactivated';
+    if (isExpired) {
+      return res.status(400).json({ error: 'This QR code has expired.' });
+    }
+
+    const { fullName, idNumber, idType, gender, contact, timeIn, timeOut } = req.body;
+
+    const newLounge = await InternetLounge.create({
+      name: fullName,
+      identifier: idNumber,
+      identifierType: idType,
+      gender,
+      contactNumber: contact,
+      timeIn: timeIn || Date.now(),
+      timeOut: timeOut || Date.now(),
+      Signature: fullName, // dummy signature
+      qrToken: token
+    });
+
+    qrCode.submissionCount += 1;
+    await qrCode.save();
+
+    res.status(201).json({ success: true, data: newLounge });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getQRSubmissions = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const submissions = await InternetLounge.find({ qrToken: token }).sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: submissions });
+  } catch (err) {
+    next(err);
+  }
+};

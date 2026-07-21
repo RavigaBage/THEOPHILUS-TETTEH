@@ -1,0 +1,68 @@
+
+const AUTH_ENDPOINTS = ["auth/refresh", "auth/verify", "auth/login"];
+const API_BASE_URL = import.meta.env.PUBLIC_API_SERVER_URL || "http://localhost:3001";
+
+let refreshPromise: Promise<boolean> | null = null;
+
+export async function refreshAccessToken(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((res) => res.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+function redirectToLogin() {
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+}
+
+async function request(
+  endpoint: string,
+  options: RequestInit = {},
+  isRetry = false
+): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
+    ...options,
+    credentials: "include", 
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  const isAuthEndpoint = AUTH_ENDPOINTS.some((p) => endpoint.includes(p));
+
+  if (res.status === 401 && !isRetry && !isAuthEndpoint) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      return request(endpoint, options, true); 
+    }
+    redirectToLogin();
+    throw new Error("Session expired");
+  }
+  if(res.status === 400){
+    const errorData = await res.json();
+    console.log(errorData);
+    throw new Error(errorData.message || "Bad Request");
+  }
+  if (!res.ok) throw new Error("API Error");
+  return res.json();
+}
+
+export const api = {
+  get: (endpoint: string) => request(endpoint),
+  post: (endpoint: string, body: any) =>
+    request(endpoint, { method: "POST", body: JSON.stringify(body) }),
+  patch: (endpoint: string, body: any) =>
+    request(endpoint, { method: "PATCH", body: JSON.stringify(body) }),
+  delete: (endpoint: string) => request(endpoint, { method: "DELETE" }),
+};
