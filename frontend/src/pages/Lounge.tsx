@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coffee, Plus, Save, Clock, X, User, Edit2, Trash2 } from 'lucide-react';
+import { Coffee, Plus, Save, Clock, X, User, Edit2, Trash2,ChevronLeft } from 'lucide-react';
 import { useCrud } from "../hooks/useCrud";
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
@@ -25,20 +25,30 @@ export default function Lounge() {
     createRecord,
     updateRecord,
     deleteRecord,
+    pages: pageNumber,
   } = useCrud<LoungeUser>({ endpoint: 'api/users/lounge-data' });
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  
-  // Search & Filters state
+
+    const [windowStart, setWindowStart] = useState(1);
+    const WINDOW_SIZE = 5;
+    const totalPages = pageNumber;
+
+    const startPage = windowStart;
+    const endPage = Math.min(startPage + WINDOW_SIZE - 1, totalPages);
+
   const [searchQuery, setSearchQuery] = useState('');
   
   const fuzzyFilteredUsers = useFuzzySearch<LoungeUser>(users || [], searchQuery, {
     keys: ['name', 'identifier', 'Signature']
   });
+  
+ 
 
   // Form State
   const [formData, setFormData] = useState({
@@ -51,16 +61,32 @@ export default function Lounge() {
     user_time_out: ''
   });
 
-  useEffect(() => {
-    fetchUsers();
-    // Default time to now
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    setFormData(prev => ({ ...prev, user_time_in: now.toISOString().slice(0, 16) }));
-  }, [fetchUsers]);
+useEffect(() => {
+  fetchUsers({ page: currentPage, limit: 20 });
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  setFormData((prev) => ({ ...prev, user_time_in: now.toISOString().slice(0, 16) }));
+}, [currentPage, fetchUsers]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+    // if we clicked the last page in the visible window, slide forward
+    if (page === endPage && endPage < totalPages) {
+      setWindowStart(endPage + 1);
+    }
+  };
+
+  const handlePrevWindow = () => {
+    setWindowStart((prev) => Math.max(1, prev - WINDOW_SIZE));
+  };
+
+  const handleJumpToLast = () => {
+    const lastWindowStart = Math.floor((totalPages - 1) / WINDOW_SIZE) * WINDOW_SIZE + 1;
+    setCurrentPage(totalPages);
+    setWindowStart(lastWindowStart);
   };
 
     const validateForm = () => {
@@ -428,6 +454,47 @@ export default function Lounge() {
               )}
             </tbody>
           </table>
+          <div className="flex items-center gap-2 py-4 justify-end">
+            {startPage > 1 && (
+              <button
+                onClick={handlePrevWindow}
+                className="px-3 py-1 rounded bg-zinc-200"
+                title="Reveal previous pages to navigate to"
+              >
+                <ChevronLeft />
+              </button>
+            )}
+
+            {Array.from({ length: endPage - startPage + 1 }, (_, i) => {
+              const page = startPage + i;
+
+              return (
+                <button
+                  key={page}
+                  onClick={() => handlePageClick(page)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    currentPage === page
+                      ? "bg-zinc-900 text-white"
+                      : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+
+            {endPage < totalPages && (
+              <>
+                <span>...</span>
+                <button
+                  onClick={handleJumpToLast}
+                  className="px-3 py-1 rounded-md bg-red-500 text-white"
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

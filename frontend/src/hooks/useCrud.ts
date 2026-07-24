@@ -13,6 +13,7 @@ export function useCrud<T = any>({ endpoint, onSuccess, onError }: UseCrudOption
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const { success, error } = useToast();
+  const [pages,setpages] = useState(0);
 
   const fetchAll = useCallback(async (params?: Record<string, any>) => {
     try {
@@ -22,6 +23,7 @@ export function useCrud<T = any>({ endpoint, onSuccess, onError }: UseCrudOption
         : '';
       const res = await api.get(`${endpoint}${queryString}`);
       if (res.data) setData(res.data);
+      if(res.total ) setpages(res.totalPages);
       return res;
     } catch (err) {
       console.error(`Failed to fetch from ${endpoint}:`, err);
@@ -90,6 +92,7 @@ export function useCrud<T = any>({ endpoint, onSuccess, onError }: UseCrudOption
   };
 
   return {
+    pages,
     data,
     setData,
     loading,

@@ -70,6 +70,7 @@ router.get('/lounge-data', restrictTo('user', 'admin'), async(req, res)=>{
            });
     }
 });
+
 router.patch('/lounge-data/:id', restrictTo('user', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
