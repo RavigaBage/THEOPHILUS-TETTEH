@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary": "#720006",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary": "#ffffff",
+              "on-primary-fixed-variant": "#00458f",
+              "outline": "#737783",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-primary": "#ffffff",
+              "surface": "#fdf8fd",
+              "surface-bright": "#fdf8fd",
+              "on-secondary": "#ffffff",
+              "on-tertiary-container": "#ffa59b",
+              "tertiary-fixed-dim": "#ffb4ab",
+              "secondary": "#2a6b2c",
+              "on-surface-variant": "#424751",
+              "tertiary-container": "#9d000c",
+              "surface-tint": "#255dad",
+              "inverse-primary": "#abc7ff",
+              "tertiary-fixed": "#ffdad6",
+              "background": "#fdf8fd",
+              "on-primary-fixed": "#001b3f",
+              "secondary-fixed": "#acf4a4",
+              "surface-container-low": "#f7f2f8",
+              "surface-container-highest": "#e5e1e7",
+              "on-secondary-container": "#307231",
+              "on-secondary-fixed": "#002203",
+              "primary-fixed-dim": "#abc7ff",
+              "on-background": "#1c1b1f",
+              "inverse-on-surface": "#f4eff5",
+              "on-surface": "#1c1b1f",
+              "primary": "#00346f",
+              "on-secondary-fixed-variant": "#0c5216",
+              "on-primary-container": "#9bbdff",
+              "on-tertiary-fixed": "#410002",
+              "on-error-container": "#93000a",
+              "inverse-surface": "#313034",
+              "surface-container-high": "#ebe7ec",
+              "secondary-container": "#acf4a4",
+              "secondary-fixed-dim": "#91d78a",
+              "outline-variant": "#c2c6d3",
+              "primary-fixed": "#d7e2ff",
+              "surface-dim": "#ddd9de",
+              "surface-variant": "#e5e1e7",
+              "error": "#ba1a1a",
+              "surface-container": "#f1ecf2",
+              "primary-container": "#004a99",
+              "on-tertiary-fixed-variant": "#93000b"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-effect {
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+      .viscous-transition {
+        transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #e5e1e7;
+        border-radius: 10px;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased flex min-h-screen">
+<!-- NavigationDrawer (Sidebar - Desktop) -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 hidden md:flex flex-col bg-[#f7f2f8] backdrop-blur-xl dark:bg-[#2b2930]/80 shadow-xl dark:shadow-none">
+<div class="px-6 py-8">
+<span class="font-['Manrope'] uppercase tracking-widest text-xs font-semibold text-on-surface">Operational Hub</span>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 viscous-transition text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] rounded-lg font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">videocam</span>
+<span>CCTV Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 viscous-transition bg-[#d0e4ff] text-[#00346f] border-l-4 border-[#004A99] font-semibold rounded-r-lg font-['Inter'] text-sm" href="#">
+<span class="material-symbols-outlined">system_update_alt</span>
+<span>Software Ops</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 viscous-transition text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] rounded-lg font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span>User Access</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 viscous-transition text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] rounded-lg font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span>Audit Logs</span>
+</a>
+</nav>
+<div class="p-6">
+<div class="flex items-center gap-3 p-3 bg-surface-container rounded-xl">
+<img alt="User Profile" class="w-8 h-8 rounded-full bg-primary-container" data-alt="Close-up professional portrait of a tech operations manager in a dimly lit control room setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBau8yQviyFiHIVTu4Al9J8COcu1qzz7U4aqyxpnIn8ldGlE6S5nFiolGLsKBrhQTKz_6xipyq4Ml8BDcbQ_1BTx3apptL1JIDZMDtgGKTXgq9ziGNYOhek6WRup-zamFq2120_os4XbzG39rX1zMTcRiHoV4hN0Qi055hAclj6mopxrSpGI7zu0PoD7bcTsISSZnojj6rv8Io2g-AcxoWZzsJ07DpiJry266BmXwor-67VRVKQ1ZyPQKNYCvhlg5rUHQnsvWintI"/>
+<div class="overflow-hidden">
+<p class="text-xs font-bold truncate">Admin Console</p>
+<p class="text-[10px] text-on-surface-variant">System Root</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-30 bg-[#fdf8fd] dark:bg-[#1c1b1f] flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#004A99]">grid_view</span>
+<h1 class="font-['Manrope'] font-extrabold text-[#004A99] dark:text-[#d0e4ff] tracking-tighter text-2xl">FaciliQ</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full text-xs font-medium text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                    Systems Nominal
+                </div>
+<span class="material-symbols-outlined p-2 hover:bg-surface-container-highest rounded-full cursor-pointer viscous-transition">notifications</span>
+<img alt="User" class="w-8 h-8 rounded-full" data-alt="Minimalist abstract branding icon for FaciliQ featuring geometric patterns in professional blue tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1O_jYU10hZnaP_tOut5udEZPsSbyG3a8iyWdahgLifHz1ZIZ3PyKVAlZnK_5-vwHazXYuNj_gu3Rxg9ZE3umMxU2Ybuo5vnCS6QjMotP2nlLVEeHlnqKMW_zYF9lmk5W4hBqGXnpYtB0XJ6sEyFIFpNDsh7Shzc-iH6z96HaqRp5QuFSjMdEX90Q-9zHzpltAg5Zrh05oukIItree-YpZBb7Z2habssen0VdaLE7mb6td8qqq6EMxA3lVWaV9RVyhx4fruEh0U98"/>
+</div>
+</header>
+<!-- Screen Content: Software Deployment -->
+<div class="px-6 py-8 max-w-7xl mx-auto w-full space-y-8">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="font-headline font-bold text-3xl tracking-tight text-primary">Software Deployment</h2>
+<p class="font-body text-on-surface-variant">Manage package lifecycle and network-wide updates.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 hover:opacity-90 viscous-transition shadow-sm">
+<span class="material-symbols-outlined text-sm">upload_file</span>
+                        New Package
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Package Upload & Manager (Lg-5) -->
+<section class="lg:col-span-5 flex flex-col gap-6">
+<div class="bg-surface-container-low p-6 rounded-xl space-y-4">
+<div class="flex justify-between items-center">
+<h3 class="font-headline font-bold text-lg">Package Library</h3>
+<span class="text-xs text-on-surface-variant bg-surface-container px-2 py-1 rounded">3 Active</span>
+</div>
+<div class="space-y-3">
+<!-- Package Item -->
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center gap-4 hover:shadow-md viscous-transition cursor-pointer">
+<div class="bg-primary-fixed w-10 h-10 rounded flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">terminal</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold">SecurityPatch_v2.4.msi</p>
+<p class="text-[11px] text-on-surface-variant">124 MB • Uploaded 2h ago</p>
+</div>
+<span class="material-symbols-outlined text-outline text-lg">more_vert</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center gap-4 border-2 border-dashed border-outline-variant">
+<div class="w-10 h-10 rounded flex items-center justify-center text-outline">
+<span class="material-symbols-outlined">add</span>
+</div>
+<div class="flex-1">
+<p class="text-sm text-on-surface-variant">Drag or browse for packages...</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Target Configuration -->
+<div class="bg-surface-container-low p-6 rounded-xl space-y-6">
+<h3 class="font-headline font-bold text-lg">Target Configuration</h3>
+<div class="space-y-4">
+<label class="block">
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Select Group</span>
+<div class="mt-1 relative">
+<select class="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 text-sm appearance-none focus:ring-2 focus:ring-primary">
+<option>ICT Lab PCs (North Wing)</option>
+<option>Admin Department</option>
+<option>Public Terminals</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</label>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest p-3 rounded-lg text-center">
+<p class="text-xs text-on-surface-variant">Active Nodes</p>
+<p class="text-xl font-bold text-primary">42</p>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-lg text-center">
+<p class="text-xs text-on-surface-variant">Offline</p>
+<p class="text-xl font-bold text-outline">03</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Scheduling & Ops (Lg-7) -->
+<section class="lg:col-span-7 space-y-6">
+<div class="bg-surface-container-low p-6 rounded-xl">
+<h3 class="font-headline font-bold text-lg mb-4">Deployment Schedule</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<button class="flex flex-col items-start gap-2 p-4 bg-primary text-on-primary rounded-xl viscous-transition hover:brightness-110">
+<span class="material-symbols-outlined text-3xl">bolt</span>
+<div class="text-left">
+<p class="font-bold">Deploy Immediate</p>
+<p class="text-[10px] opacity-80 uppercase tracking-tighter">Force execute on connected nodes</p>
+</div>
+</button>
+<button class="flex flex-col items-start gap-2 p-4 bg-surface-container-lowest text-on-surface rounded-xl border border-transparent hover:border-primary-fixed-dim viscous-transition">
+<span class="material-symbols-outlined text-3xl text-primary">restart_alt</span>
+<div class="text-left">
+<p class="font-bold text-primary">Next Reboot</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter">Queue for system initialization</p>
+</div>
+</button>
+</div>
+<div class="mt-6 pt-6 border-t border-outline-variant/20">
+<label class="flex items-center gap-3 cursor-pointer">
+<input class="w-4 h-4 text-primary rounded border-outline-variant focus:ring-primary" type="checkbox"/>
+<span class="text-sm">Allow user to postpone (max 3 times)</span>
+</label>
+</div>
+</div>
+<!-- Deployment Logs -->
+<div class="bg-surface-container-low rounded-xl overflow-hidden">
+<div class="p-6 flex justify-between items-center bg-surface-container">
+<h3 class="font-headline font-bold text-lg">Deployment Log</h3>
+<button class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-sm">download</span>
+                                Export Logs
+                            </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead>
+<tr class="text-on-surface-variant font-bold text-[11px] uppercase tracking-widest bg-surface-container-high/30">
+<th class="px-6 py-3">Node ID</th>
+<th class="px-6 py-3">Status</th>
+<th class="px-6 py-3">Timestamp</th>
+<th class="px-6 py-3 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="bg-surface-container-lowest/50">
+<td class="px-6 py-4 font-mono text-xs">ICT-LAB-012</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold">
+                                                Deployed
+                                            </span>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-xs">Today, 14:22</td>
+<td class="px-6 py-4 text-right">
+<button class="text-tertiary-container hover:text-tertiary font-bold text-xs flex items-center gap-1 ml-auto">
+<span class="material-symbols-outlined text-sm">history</span>
+                                                Rollback
+                                            </button>
+</td>
+</tr>
+<tr class="bg-surface-container-lowest/50">
+<td class="px-6 py-4 font-mono text-xs">ICT-LAB-045</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-primary-fixed text-on-primary-fixed text-[10px] font-bold">
+                                                Pending
+                                            </span>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-xs">Waiting...</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant opacity-50 cursor-not-allowed font-bold text-xs flex items-center gap-1 ml-auto">
+<span class="material-symbols-outlined text-sm">history</span>
+                                                Rollback
+                                            </button>
+</td>
+</tr>
+<tr class="bg-surface-container-lowest/50">
+<td class="px-6 py-4 font-mono text-xs">ICT-LAB-008</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-error-container text-on-error-container text-[10px] font-bold">
+                                                Failed
+                                            </span>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-xs">Today, 14:10</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary font-bold text-xs flex items-center gap-1 ml-auto">
+<span class="material-symbols-outlined text-sm">refresh</span>
+                                                Retry
+                                            </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 md:hidden bg-[#fdf8fd]/90 backdrop-blur-lg dark:bg-[#1c1b1f]/90 shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)]">
+<div class="flex flex-col items-center justify-center text-[#49454f] dark:text-[#cac4d0]">
+<span class="material-symbols-outlined">videocam</span>
+<span class="font-['Inter'] text-[10px] font-medium">CCTV</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#d0e4ff] text-[#00346f] rounded-xl px-3 py-1">
+<span class="material-symbols-outlined">install_desktop</span>
+<span class="font-['Inter'] text-[10px] font-medium">Deploy</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#49454f] dark:text-[#cac4d0]">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Inter'] text-[10px] font-medium">Users</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#49454f] dark:text-[#cac4d0]">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-['Inter'] text-[10px] font-medium">Logs</span>
+</div>
+</nav>
+</main>
+</body></html>

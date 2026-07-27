@@ -3,6 +3,7 @@ import { ServerCrash, Loader2, Plus, X, RefreshCw, Power, LogOut, MonitorPlay, A
 import { api } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Pagination } from '../components/ui/Pagination';
 import { formatDistanceToNow } from 'date-fns';
 import { useCrud } from '../hooks/useCrud';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
@@ -44,6 +45,8 @@ export default function Devices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRoom, setFilterRoom] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fuzzyFilteredDevices = useFuzzySearch(devices, searchQuery, {
     keys: ['deviceName', 'ipAddress', 'operatingSystem', 'location']
@@ -54,6 +57,16 @@ export default function Devices() {
     if (filterStatus !== "All" && d.status?.remoteAgent !== filterStatus) return false;
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterRoom, filterStatus]);
+
+  const totalPages = Math.ceil(filteredDevices.length / ITEMS_PER_PAGE) || 1;
+  const paginatedDevices = filteredDevices.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   // Selection & Actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -442,7 +455,7 @@ export default function Devices() {
                     </td>
                   </tr>
                 ) : (
-                  filteredDevices.map(device => (
+                  paginatedDevices.map(device => (
                     <tr 
                       key={device._id} 
                       className={`hover:bg-zinc-50/50 transition-colors cursor-pointer ${selectedIds.has(device._id) ? 'bg-zinc-50/80' : ''}`}
@@ -508,6 +521,13 @@ export default function Devices() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="px-6 bg-zinc-50/50 border-t border-zinc-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       )}

@@ -66,17 +66,6 @@ function InitiateService_route(commandService){
           totalPages: Math.ceil(total / limit),
         });
       } catch (err) {
-        if (err.message && err.message.includes('bufferCommands')) {
-          console.warn('[AI Studio] Using mock devices');
-          return res.json({
-            status: "success",
-            data: [
-              { _id: '1', deviceName: 'DEV-LAPTOP-01', hostname: 'dev-01.local', ipAddress: '192.168.1.100', location: 'HQ', department: 'Engineering', status: { remoteAgent: 'active' } },
-              { _id: '2', deviceName: 'SERVER-PROD', hostname: 'server-prod.local', ipAddress: '10.0.0.5', location: 'DC-1', status: { remoteAgent: 'waiting' } },
-            ],
-            page: 1, limit: 20, total: 2, totalPages: 1
-          });
-        }
         res.status(500).json({
           status: "error",
           message: err.message,
@@ -87,11 +76,11 @@ function InitiateService_route(commandService){
 
   router.post("/restart", restrictTo("user", "admin"), async (req, res) => {
     try{
-      const { deviceIds } = req.body;
-      if(!deviceIds?.length) return res.status(400).json({message: "No device IDs provided"});
+      deviceIds = req.body.deviceIds;
+      if(deviceIds.length === 0) return res.status(400).json({message: "No device IDs provided"});
       
       const result =  await commandService.restart(deviceIds);
-      if(result === 'error occurred') return res.json({ status: "mock_success", message: "Command executed (mock)" });
+      if(result === 'error occurred') return res.status(500).json({message: "Error creating command"});
     
       res.json(result);
     }catch(error){

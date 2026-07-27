@@ -54,34 +54,19 @@ class CommandDispatcher {
             }
 
             const targets = await this.repo.getTargets(commandId);
+            const keysTarget = Object.keys(targets).length;
             await this.repo.updateStatus(commandId, "SENT");
-            console.log("Targets: ", targets);
+            console.log("Target ",targets);
+            for (let i = 0; i < keysTarget; i++) {
+                const target = targets[i];
+                if(target.deviceId) {
 
-            for (const target of targets) {
-                if (target.deviceId) {
                     const Room_ID = await this.repo.getRoomId(target.deviceId);
-                    if (Room_ID) {
-                        // Fail-closed local permission validation
-                        if (command.commandType === "SYSTEM_SHUTDOWN" && Room_ID.permissions?.allowRemoteShutdown === false) {
-                            console.warn(`⚠️  [DENIED] device=${target.deviceId} does not allow remote shutdown`);
-                            await this.repo.markOffline(target._id, "Permission Denied: Remote shutdown is disabled on this device");
-                            continue;
-                        }
-                        if (command.commandType === "SYSTEM_RESTART" && Room_ID.permissions?.allowRemoteRestart === false) {
-                            console.warn(`⚠️  [DENIED] device=${target.deviceId} does not allow remote restart`);
-                            await this.repo.markOffline(target._id, "Permission Denied: Remote restart is disabled on this device");
-                            continue;
-                        }
-                        if (command.commandType === "SYSTEM_UPDATE" && Room_ID.permissions?.allowRemoteRestart === false) {
-                            console.warn(`⚠️  [DENIED] device=${target.deviceId} does not allow remote updates`);
-                            await this.repo.markOffline(target._id, "Permission Denied: Remote update is disabled on this device");
-                            continue;
-                        }
-
-                        const isOnline = this.socketService.isDeviceOnline(Room_ID.deviceId);
+                    if(Room_ID){
+                        const isOnline = this.socketService.isDeviceOnline(Room_ID.deviceId)
                         if (!isOnline) {
                             console.warn(`⚠️  [SKIP] device=${target.deviceId} is offline`);
-                            await this.repo.markOffline(target._id, "Device offline");
+                            await this.repo.markOffline(target.id, "SKIPPED");
                             continue;
                         }
 
@@ -89,23 +74,22 @@ class CommandDispatcher {
                             Room_ID.deviceId,
                             "device:command",
                             {
-                                commandId: command._id.toString(),
+                                commandId: command.id,
                                 type: command.commandType,
                                 payload: command.payload
                             }
                         );
 
-                        await this.repo.markSent(target._id);
-                    } else {
-                        await this.repo.markOffline(target._id, "Device not registered in database");
+                        await this.repo.markSent(target._id, "SENT");
                     }
-                } else {
-                    console.warn("Target has no deviceId associated:", target);
+                }else{
+                    console.log(target);
                 }
+
             }
 
+
         } catch (error) {
-            console.error("Error in dispatch:", error);
             await this.repo.updateStatus(commandId, "FAILED");
         }
     }

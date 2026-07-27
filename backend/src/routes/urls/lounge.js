@@ -1,6 +1,6 @@
 const express = require('express');
 const {protect, restrictTo } = require('./../../middleware/auth');
-const LoungeData = require('./../../models/InternetLounge');
+const LoungeData = require('./../../models/internetLounge');
 const router = express.Router();
 
 
@@ -12,8 +12,8 @@ router.get('/lounge-data', restrictTo('user', 'admin'), async(req, res)=>{
 
         
         const limit =  20;
-        const pageNum = parseInt(page) || 1;
-        const skip = (pageNum - 1) * limit;
+
+        const skip = (page - 1) * limit;
         const filter = {}
 
         if (id_type && id_type !== 'all') {
@@ -45,32 +45,22 @@ router.get('/lounge-data', restrictTo('user', 'admin'), async(req, res)=>{
             status:'success',
             message: 'Lounge - users and admins see this',
             data,
-            page: pageNum,
+            page,
             limit,
             total,
             totalPages: Math.ceil(total / limit),
         });
 
     } catch (err) {
-        if (err.message && err.message.includes('bufferCommands')) {
-            console.warn('[AI Studio] Using mock lounge data');
-            return res.json({
-                status: 'success',
-                message: 'Lounge data (mock)',
-                data: [
-                    { _id: 'mock1', name: 'Alice Smith', identifier: 'GH-123456789-0', identifierType: 'ghana_card', contactNumber: '0501234567', gender: 'female', timeIn: new Date(Date.now() - 3600000).toISOString(), timeOut: '', Signature: 'ASmith' }
-                ],
-                page: 1, limit: 20, total: 1, totalPages: 1
-            });
-        }
-         res.status(500).json({
+         res.json({
             status:'error',
             message: err.message || 'An error occurred while fetching lounge data',
             data:null,
            });
+    } finally {
+        
     }
 });
-
 router.patch('/lounge-data/:id', restrictTo('user', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -106,13 +96,6 @@ router.patch('/lounge-data/:id', restrictTo('user', 'admin'), async (req, res) =
     });
 
   } catch (err) {
-    if (err.message && err.message.includes('bufferCommands')) {
-        console.warn('[AI Studio] Using mock update response');
-        return res.json({
-            status: 'success',
-            data: { _id: req.params.id, ...req.body }
-        });
-    }
     res.status(500).json({
       status: 'error',
       message: err.message
@@ -137,13 +120,6 @@ router.delete('/lounge/:id', restrictTo('user', 'admin'), async (req, res) => {
     });
 
   } catch (err) {
-    if (err.message && err.message.includes('bufferCommands')) {
-        console.warn('[AI Studio] Using mock delete response');
-        return res.json({
-            status: 'success',
-            message: 'Record deleted successfully (mock)'
-        });
-    }
     res.status(500).json({
       status: 'error',
       message: err.message
@@ -167,26 +143,20 @@ router.post('/submit-lounge-data', restrictTo('user', 'admin'), async(req, res)=
 
 
         const total = await LoungeData.countDocuments();
-        const data = await LoungeData.create(normalizeDataSchema);
+        const data = await LoungeData.insertOne(normalizeDataSchema);
         res.json({
             status:'success',
             message: 'Lounge - users and admins see this',
             data:data,
         });
     } catch (err) {
-        if (err.message && err.message.includes('bufferCommands')) {
-            console.warn('[AI Studio] Using mock submit response');
-            return res.json({
-                status: 'success',
-                message: 'Lounge data submitted (mock)',
-                data: { _id: 'mock2', ...req.body }
-            });
-        }
-         res.status(500).json({
+         res.json({
             status:'error',
             message: err.message || 'An error occurred while fetching lounge data',
             data:null,
            });
+    } finally {
+        
     }
 });
 

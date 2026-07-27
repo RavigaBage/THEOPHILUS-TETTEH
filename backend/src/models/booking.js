@@ -1,138 +1,160 @@
 const mongoose = require("mongoose");
 
+
 const EVENT_TYPES = [
-  "Workshop",
-  "Seminar",
-  "Training Session",
-  "Conference",
-  "Corporate Meeting",
-  "Product Launch",
-  "Networking Event",
-  "Community Outreach",
-  "Religious Gathering",
-  "Examination/Assessment",
-  "Other"
+  "workshop",
+  "teaching",
+  "meetings",
+  "v.conference",
+  "discussion",
+  "l.institution",
+  "it training",
+  "project",
 ];
 
 const CATEGORIES = [
-  "Educational",
-  "Corporate/Business",
-  "Government",
-  "NGO/Non-Profit",
-  "Religious",
-  "Social/Community",
-  "Health & Wellness",
-  "Technology/ICT",
-  "Agriculture",
-  "Other"
+  "programming",
+  "data science",
+  "networking",
+  "robotics",
+  "drone",
+  "iot",
+  "ai",
+  "b.computing",
+  "others",
 ];
 
 const BENEFICIARIES = [
-  "Students",
-  "Youth",
-  "Women",
-  "Persons with Disabilities (PWDs)",
-  "General Public",
-  "Corporate Employees",
-  "Government Officials",
-  "Farmers",
-  "Entrepreneurs/SMEs",
-  "Community Members",
-  "Children",
-  "Other"
+  "government officials",
+  "senior citizens",
+  "local residents",
+  "students",
+  "business",
+  "others",
 ];
 
-const ROOMS = [
-  "Seminar Room 1",
-  "Seminar Room 2",
-  "Seminar Room 3",
-  "Seminar Room 4",
-  "Conference Room",
-  "Training Lab"
+const ROOM_TYPES = [
+  "conference",
+  "seminar",
 ];
 
-const BOOKING_STATUS = [
-  "Booked",
-  "Occupied",
-  "Completed",
-  "Cancelled"
+const ROOM_STATUS = [
+  "AVAILABLE",
+  "OCCUPIED",
+  "MAINTENANCE",
+  "CHECKOUT",
+  "RESERVED",
 ];
 
-const PAYMENT_STATUS = [
-  "Unpaid",
-  "Paid",
-  "Partially Paid"
-];
 
 const EventProgramSchema = new mongoose.Schema(
   {
-    date: { type: Date, required: true },
-    room: {
+    startDate: { type: Date, required: true },
+    endDate:   { type: Date, required: true },   // same as startDate for single-day
+    status:    { type: String, enum: ['reserved', 'confirmed', 'cancelled'], default: 'reserved' },
+
+    roomNumber: { type: Number, enum: [1, 2, 3, 4], required: true },
+    name: {
       type: String,
-      enum: ROOMS,
+      required: true,
+      trim: true,
+    },
+
+    date: {
+      type: Date,
       required: true,
     },
-    rate: { type: Number, required: true },
+
     organizer: {
       type: String,
       required: true,
       trim: true,
     },
+
     presenter: {
       type: String,
       required: true,
       trim: true,
     },
+
     programName: {
       type: String,
       required: true,
       trim: true,
     },
+
     participants: {
       type: Number,
       required: true,
-      min: 1,
+      min: 0,
     },
+
     eventType: {
       type: String,
       enum: EVENT_TYPES,
       required: true,
     },
+
     category: {
       type: String,
       enum: CATEGORIES,
       required: true,
     },
+
     beneficiaries: {
-      type: [String],
+      type: String,
+      enum: BENEFICIARIES,
       required: true,
     },
+
     description: {
       type: String,
+      required: true,
       trim: true,
     },
-    paymentStatus: {
-      type: String,
-      enum: PAYMENT_STATUS,
-      default: "Unpaid",
-    },
-    amountDue: {
+
+    
+    roomNumber: {
       type: Number,
+      enum: [1, 2, 3, 4],
       required: true,
     },
+
+    roomType: {
+      type: String,
+      enum: ROOM_TYPES,
+      required: true,
+    },
+
     status: {
       type: String,
-      enum: BOOKING_STATUS,
-      default: "Booked",
+      enum: ROOM_STATUS,
+      default: "AVAILABLE",
     },
+
+ 
     createdBy: {
       type: String,
       default: "admin",
     },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
-  {
+
+      {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.models.EventProgram || mongoose.model('EventProgram', EventProgramSchema);
+EventProgramSchema.index({
+  name: "text",
+  organizer: "text",
+  presenter: "text",
+  programName: "text",
+});
+
+
+module.exports =  mongoose.models.EventProgram || mongoose.model('EventProgram', EventProgramSchema);

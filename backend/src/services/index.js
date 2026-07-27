@@ -1,6 +1,6 @@
 const CommandRepository = require('./commandRepository');
 const CommandDispatcher = require('./commandDispatch');
-const CommandService = require('./commandservices');
+const CommandService = require('./commandServices');
 const {
     deviceProgress,
     deviceCommand,

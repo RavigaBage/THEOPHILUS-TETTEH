@@ -1,7 +1,6 @@
 require("dotenv").config();
 const EventProgram = require("./src/models/booking");
 const InternetLounge = require("./src/models/InternetLounge");
-const User = require("./src/models/User");
 const connectDB = require('./src/config/db');
 
 const mongoose = require('mongoose');
@@ -34,7 +33,7 @@ function formatTime(date) {
 }
 
 // ---------- Configuration ----------
-const MONGO_URI = process.env.MONGO_URL;
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/yourdb';
 const YEAR = 2025;
 const START_DATE = new Date(YEAR, 0, 1);
 const END_DATE = new Date(YEAR, 11, 31, 23, 59, 59);
@@ -65,33 +64,6 @@ const ID_TYPES = [
   "driver_license", "voter_id", "nhis_card", "other"
 ];
 const GENDERS = ["male", "female", "other"];
-
-// Seed users — passwords are plain text here on purpose; the User model's
-// pre('save') hook hashes them automatically when created via User.create().
-const USER_SEEDS = [
-  {
-    name: "Admin User",
-    email: "admin@iac.com",
-    password: "Admin@1234",
-    role: "admin",
-  },
-  {
-    name: "Test User",
-    email: "user@iac.com",
-    password: "User@1234",
-    role: "user",
-  },
-];
-
-// ---------- Seed Users ----------
-async function seedUsers() {
-  for (const userData of USER_SEEDS) {
-    await User.create(userData);
-  }
-  USER_SEEDS.forEach((u) =>
-    console.log(`   - ${u.role}: ${u.email} / ${u.password}`)
-  );
-}
 
 // ---------- Seed Lounge ----------
 async function seedLounge() {
@@ -157,10 +129,8 @@ async function seed() {
     // Optional: Clear existing data
     await EventProgram.deleteMany({});
     await InternetLounge.deleteMany({});
-    await User.deleteMany({});
     console.log('Cleared old data');
 
-    await seedUsers();
     await seedLounge();
     await seedEvents();
 

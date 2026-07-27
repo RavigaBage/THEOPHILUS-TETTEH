@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, List, Plus, Save, X, Edit2, Trash2, MonitorPlay, ChevronLeft, ChevronRight, CheckCircle, Search } from 'lucide-react';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Pagination } from '../components/ui/Pagination';
 import { useCrud } from '../hooks/useCrud';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
 import { 
@@ -73,6 +74,8 @@ export default function Rooms() {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRoom, setFilterRoom] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fuzzyFilteredBookings = useFuzzySearch(bookings, searchQuery, {
     keys: ['programName', 'organizer', 'presenter', 'room']
@@ -82,6 +85,16 @@ export default function Rooms() {
     if (filterRoom !== 'All' && b.room !== filterRoom) return false;
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterRoom]);
+
+  const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE) || 1;
+  const paginatedBookings = filteredBookings.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   // Calendar State
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -634,7 +647,7 @@ export default function Rooms() {
                     </td>
                   </tr>
                 ) : (
-                  filteredBookings.map(booking => (
+                  paginatedBookings.map(booking => (
                     <tr key={booking._id} className="hover:bg-zinc-50/50 transition-colors">
                       <td className="py-3 px-4">
                         <div className="font-medium text-zinc-900">{format(new Date(booking.date), 'MMM d, yyyy')}</div>
@@ -685,6 +698,13 @@ export default function Rooms() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="px-6 bg-zinc-50/50 border-t border-zinc-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       )}

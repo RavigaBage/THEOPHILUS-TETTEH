@@ -7,7 +7,7 @@ const REPORT_TYPES = [
   'conference_rooms',
   'center_overview',
   'device_status',
-  'custom','monthly_summary',
+  'custom',
 ];
 
 const REPORT_STATUS = ['generating', 'completed', 'failed'];
@@ -60,8 +60,6 @@ const ReportSchema = new mongoose.Schema(
       totalEvents: { type: Number, default: 0 },
       activeDevices: { type: Number, default: 0 },
       occupancyRate: { type: Number, default: 0 },
-      totalRevenue: { type: Number, default: 0 },
-      totalOutstanding: { type: Number, default: 0 },
     },
 
     chartData: {

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Coffee, Plus, Save, Clock, X, User, Edit2, Trash2,ChevronLeft } from 'lucide-react';
+import { Coffee, Plus, Save, Clock, X, User, Edit2, Trash2 } from 'lucide-react';
 import { useCrud } from "../hooks/useCrud";
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Pagination } from '../components/ui/Pagination';
 
 interface LoungeUser {
   _id: string;
@@ -35,12 +36,7 @@ export default function Lounge() {
   
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-    const [windowStart, setWindowStart] = useState(1);
-    const WINDOW_SIZE = 5;
-    const totalPages = pageNumber;
-
-    const startPage = windowStart;
-    const endPage = Math.min(startPage + WINDOW_SIZE - 1, totalPages);
+  const totalPages = pageNumber;
 
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -71,25 +67,8 @@ useEffect(() => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  const handlePageClick = (page: number) => {
-    setCurrentPage(page);
-    // if we clicked the last page in the visible window, slide forward
-    if (page === endPage && endPage < totalPages) {
-      setWindowStart(endPage + 1);
-    }
-  };
 
-  const handlePrevWindow = () => {
-    setWindowStart((prev) => Math.max(1, prev - WINDOW_SIZE));
-  };
-
-  const handleJumpToLast = () => {
-    const lastWindowStart = Math.floor((totalPages - 1) / WINDOW_SIZE) * WINDOW_SIZE + 1;
-    setCurrentPage(totalPages);
-    setWindowStart(lastWindowStart);
-  };
-
-    const validateForm = () => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.full_name.trim()) newErrors.full_name = 'Full Name is required';
     if (!formData.user_id.trim()) newErrors.user_id = 'ID Number is required';
@@ -454,46 +433,12 @@ useEffect(() => {
               )}
             </tbody>
           </table>
-          <div className="flex items-center gap-2 py-4 justify-end">
-            {startPage > 1 && (
-              <button
-                onClick={handlePrevWindow}
-                className="px-3 py-1 rounded bg-zinc-200"
-                title="Reveal previous pages to navigate to"
-              >
-                <ChevronLeft />
-              </button>
-            )}
-
-            {Array.from({ length: endPage - startPage + 1 }, (_, i) => {
-              const page = startPage + i;
-
-              return (
-                <button
-                  key={page}
-                  onClick={() => handlePageClick(page)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium ${
-                    currentPage === page
-                      ? "bg-zinc-900 text-white"
-                      : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            })}
-
-            {endPage < totalPages && (
-              <>
-                <span>...</span>
-                <button
-                  onClick={handleJumpToLast}
-                  className="px-3 py-1 rounded-md bg-red-500 text-white"
-                >
-                  {totalPages}
-                </button>
-              </>
-            )}
+          <div className="px-6 bg-zinc-50/50 border-t border-zinc-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       </div>

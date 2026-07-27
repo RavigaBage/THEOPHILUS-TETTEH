@@ -2,7 +2,7 @@ const { io } = require("socket.io-client");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const AgentCommandHandler = require("./AgentCommander");
+const AgentCommandHandler = require("./AgentCommandHandler");
 
 const config = JSON.parse(
     fs.readFileSync(path.join(__dirname, "config.json"), "utf-8")
@@ -64,15 +64,12 @@ function buildRegistrationPayload() {
         authenticationMode:  config.authenticationMode  || "token",
         encryptionEnabled:   config.encryptionEnabled   ?? true,
 
-       permissions: {
+        permissions: {
             allowRemoteShutdown:   config.permissions?.allowRemoteShutdown   ?? true,
-            allowRemoteRestart:    config.permissions?.allowRemoteRestart    ?? true,
-            allowRemoteLock:       config.permissions?.allowRemoteLock       ?? true,
-            allowRemoteMonitoring: config.permissions?.allowRemoteMonitoring ?? true,
-            allowFileTransfer:     config.permissions?.allowFileTransfer     ?? false,
-            allowRemoteUpdate:     config.permissions?.allowRemoteUpdate     ?? true,
-            allowRemoteCommandExecution: config.permissions?.allowRemoteCommandExecution ?? false,
-            allowProcessStart:     config.permissions?.allowProcessStart     ?? false,
+            allowRemoteRestart:    config.permissions?.allowRemoteRestart     ?? true,
+            allowRemoteLock:       config.permissions?.allowRemoteLock        ?? true,
+            allowRemoteMonitoring: config.permissions?.allowRemoteMonitoring  ?? true,
+            allowFileTransfer:     config.permissions?.allowFileTransfer      ?? false,
         },
 
         adminNotes: config.adminNotes || null,
@@ -98,7 +95,7 @@ const socket = io(config.serverUrl, {
     reconnectionDelay: config.reconnectInterval,
 });
 
-const handler = new AgentCommandHandler(socket, config);
+const handler = new AgentCommandHandler(socket);
 
 socket.on("connect", () => {
     console.log("🟢 Connected to server:", socket.id);

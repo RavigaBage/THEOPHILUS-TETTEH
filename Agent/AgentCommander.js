@@ -1,15 +1,14 @@
-class AgentCommandHandler {
+ class AgentCommandHandler {
 
-    constructor(socket, config) {
+    constructor(socket) {
         this.socket = socket;
-        this.config = config || {};
     }
 
     register() {
 
         this.socket.on("device:command", async (cmd) => {
 
-            this.socket.emit("command:ack", {
+            await this.socket.emit("command:ack", {
                 commandId: cmd.commandId
             });
 
@@ -35,46 +34,39 @@ class AgentCommandHandler {
     }
 
     async execute(cmd) {
-        const permissions = this.config.permissions || {};
 
         switch (cmd.type) {
 
             case "SYSTEM_RESTART":
-                if (permissions.allowRemoteRestart === false) {
-                    throw new Error("Permission Denied: Remote restart is disabled in local config.");
-                }
                 return this.restart();
 
             case "SYSTEM_SHUTDOWN":
-                if (permissions.allowRemoteShutdown === false) {
-                    throw new Error("Permission Denied: Remote shutdown is disabled in local config.");
-                }
                 return this.shutdown();
 
-            case "SYSTEM_UPDATE":
-                if (permissions.allowRemoteUpdate === false) {
-                    throw new Error("Permission Denied: Remote update is disabled in local config.");
-                }
-                return this.systemUpdate();
-
             case "PROCESS_START":
-                if (permissions.allowProcessStart !== true) {
-                    throw new Error("Permission Denied: Remote process start is disabled in local config.");
-                }
                 return this.startProcess(cmd.payload);
 
             case "CMD_EXECUTE":
-                if (permissions.allowRemoteCommandExecution !== true) {
-                    throw new Error("Permission Denied: Remote command execution is disabled in local config.");
-                }
                 return this.runCMD(cmd.payload);
 
             default:
-                throw new Error("Unknown command: " + cmd.type);
+                throw new Error("Unknown command");
         }
     }
 
-    // ...restart(), shutdown(), systemUpdate() unchanged...
+    restart() {
+        require("child_process")
+            .exec("shutdown /r /t 0");
+
+        return { success: true };
+    }
+
+    shutdown() {
+        require("child_process")
+            .exec("shutdown /s /t 0");
+
+        return { success: true };
+    }
 
     runCMD(payload) {
         const { execSync } = require("child_process");

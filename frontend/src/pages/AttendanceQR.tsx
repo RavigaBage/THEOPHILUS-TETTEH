@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { QrCode, Plus, Loader2, Download, Eye, X, Ban, Trash2, Search } from 'lucide-react';
+import { QrCode, Plus, Loader2, Download, Eye, X, Ban, Trash2, Search, RefreshCw } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Pagination } from '../components/ui/Pagination';
 import { useCrud } from '../hooks/useCrud';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
 
@@ -43,10 +44,12 @@ export default function AttendanceQR() {
   });
 
   const [viewQR, setViewQR] = useState<QRCodeRecord | null>(null);
-  const [modalAction, setModalAction] = useState<{ type: 'deactivate' | 'delete', code: QRCodeRecord } | null>(null);
+  const [modalAction, setModalAction] = useState<{ type: 'deactivate' | 'delete' | 'regenerate', code: QRCodeRecord } | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fuzzyFilteredQRs = useFuzzySearch(qrCodes, searchQuery, {
     keys: ['label', 'createdBy.name', 'token']
@@ -56,6 +59,16 @@ export default function AttendanceQR() {
     if (statusFilter !== 'All' && qr.computedStatus !== statusFilter) return false;
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.ceil(filteredQRs.length / ITEMS_PER_PAGE) || 1;
+  const paginatedQRs = filteredQRs.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   useEffect(() => {
     fetchQRCodes();
@@ -82,6 +95,15 @@ export default function AttendanceQR() {
         await updateRecord(modalAction.code._id, {}, `api/qrcodes/${modalAction.code._id}/deactivate`);
       } else if (modalAction.type === 'delete') {
         await deleteRecord(modalAction.code._id, 'api/qrcodes');
+      } else if (modalAction.type === 'regenerate') {
+        const res = await updateRecord(
+          modalAction.code._id,
+          { durationValue: modalAction.code.durationValue, durationUnit: modalAction.code.durationUnit },
+          `api/qrcodes/${modalAction.code._id}/regenerate`
+        );
+        if (res?.data) {
+          setViewQR(res.data);
+        }
       }
       setModalAction(null);
     } catch {
@@ -115,13 +137,29 @@ export default function AttendanceQR() {
         isOpen={!!modalAction}
         onClose={() => setModalAction(null)}
         onConfirm={executeModalAction}
-        title={modalAction?.type === 'delete' ? 'Delete QR Code' : 'Deactivate QR Code'}
-        message={modalAction?.type === 'delete' 
-          ? `Are you sure you want to delete this QR code? (${modalAction.code.label || 'Unnamed'}). Submissions will be kept.`
-          : `Are you sure you want to deactivate this QR code now? It will expire immediately.`}
-        confirmText={modalAction?.type === 'delete' ? 'Delete' : 'Deactivate'}
+        title={
+          modalAction?.type === 'delete'
+            ? 'Delete QR Code'
+            : modalAction?.type === 'deactivate'
+            ? 'Deactivate QR Code'
+            : 'Regenerate QR Code'
+        }
+        message={
+          modalAction?.type === 'delete'
+            ? `Are you sure you want to delete this QR code? (${modalAction.code.label || 'Unnamed'}). Submissions will be kept.`
+            : modalAction?.type === 'deactivate'
+            ? `Are you sure you want to deactivate this QR code now? It will expire immediately.`
+            : `Are you sure you want to generate a new active QR token for "${modalAction?.code.label || 'Unnamed Session'}"? The old QR token will be replaced.`
+        }
+        confirmText={
+          modalAction?.type === 'delete'
+            ? 'Delete'
+            : modalAction?.type === 'deactivate'
+            ? 'Deactivate'
+            : 'Regenerate'
+        }
         cancelText="Cancel"
-        isDestructive={true}
+        isDestructive={modalAction?.type === 'delete' || modalAction?.type === 'deactivate'}
       />
 
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -243,7 +281,7 @@ export default function AttendanceQR() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {filteredQRs.map((code) => (
+                {paginatedQRs.map((code) => (
                   <tr key={code._id} className="hover:bg-zinc-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <p className="font-medium text-zinc-900">{code.label || 'Unnamed Session'}</p>
@@ -286,6 +324,13 @@ export default function AttendanceQR() {
                         >
                           <Download className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => setModalAction({ type: 'regenerate', code })}
+                          className="p-2 text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Regenerate QR Code"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
                         {code.computedStatus === 'Active' && (
                           <button
                             onClick={() => setModalAction({ type: 'deactivate', code })}
@@ -324,6 +369,13 @@ export default function AttendanceQR() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="px-6 bg-zinc-50/50 border-t border-zinc-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       )}

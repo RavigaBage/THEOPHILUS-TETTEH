@@ -13,7 +13,8 @@ const {
   getAllReportsExcel
 } = require('../../controllers/reportController');
 
-const { generateMonthlyReport } = require("../../controllers/monthlyReportController");
+const { generateMonthlyReport } = require('../../controllers/monthlyReportController');
+
 const router = express.Router();
 
 router.use(restrictTo('admin'));

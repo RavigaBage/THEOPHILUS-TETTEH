@@ -7,7 +7,7 @@ const protect = async (req,res,next) =>{
     try{
         const authHeader = req.headers.authorization;
         if(!authHeader || !authHeader.startsWith('Bearer')){
-            req.user = { _id: '60d5ecb8b392d7001f3e3923', name: 'Admin User', role: 'admin', email: 'admin@example.com' }; return next();
+            return res.status(401).json({message: 'No token provided'});
         }
 
         const token = authHeader.split(' ')[1];
@@ -28,7 +28,7 @@ const protect = async (req,res,next) =>{
             
             return res.status(401).json({message:'Token expired, please refresh'});
         }
-        console.error(error); return res.status(401).json({message:'Invalid token', error: error.message});
+        return res.status(401).json({message:'Invalid token'});
     }
 };
 

@@ -1,71 +1,70 @@
 const express = require('express');
-const { protect, restrictTo } = require('./../../middleware/auth');
+const {protect, restrictTo } = require('./../../middleware/auth');
 const BookingData = require('./../../models/booking');
-
 const router = express.Router();
 
-router.get('/event-program', restrictTo('user', 'admin'), async(req, res) => {
+
+router.get('/event-program', restrictTo('user', 'admin'), async(req, res)=>{
     try {
-        const { date, room, page, year, month, day, status, paymentStatus } = req.query;
+        const {date, id_type, page,year,month,day} = req.query;
+        const startOfYear = new Date(`${year}`);
+        const endOfYear   = new Date(`${year+1}`);
+
         
-        const limit = 50;
-        const pageNum = parseInt(page) || 1;
-        const skip = (pageNum - 1) * limit;
-        
-        const filter = {};
-        if (room && room !== 'all') {
-            filter.room = room;
+        const limit =  20;
+
+        const skip = (page - 1) * limit;
+        const filter = {}
+
+        if (id_type && id_type !== 'all') {
+        filter.user_id_type = id_type;
         }
-        if (status && status !== 'all') {
-            filter.status = status;
-        }
-        if (paymentStatus && paymentStatus !== 'all') {
-            filter.paymentStatus = paymentStatus;
-        }
-        
+
         if (year && month && day) {
-            filter.date = {
+            filter.createdAt = {
                 $gte: new Date(year, month - 1, day),
                 $lt: new Date(year, month - 1, day + 1)
             };
-        } else if (date) {
-            const startOfDay = new Date(date);
-            startOfDay.setHours(0,0,0,0);
-            const endOfDay = new Date(date);
-            endOfDay.setHours(23,59,59,999);
-            filter.date = { $gte: startOfDay, $lte: endOfDay };
+        } else if (year && month) {
+            filter.createdAt = {
+                $gte: new Date(year, month - 1, 1),
+                $lt: new Date(year, month, 1)
+            };
+        } else if (year) {
+            filter.createdAt = {
+                $gte: new Date(year, 0, 1),
+                $lt: new Date(year + 1, 0, 1)
+            };
         }
-
-        const data = await BookingData.find(filter).skip(skip).limit(limit).sort({ date: 1 });
+        const data = await BookingData.find(filter).skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 });
         const total = await BookingData.countDocuments(filter);
         
         res.json({
-            status: 'success',
+            status:'success',
+            message: 'Booking - users and admins see this',
             data,
-            page: pageNum,
+            page,
             limit,
             total,
             totalPages: Math.ceil(total / limit),
         });
+
     } catch (err) {
-        if (err.message && err.message.includes('bufferCommands')) {
-            console.warn('[AI Studio] Using mock booking data');
-            return res.json({
-                status: 'success',
-                data: [],
-                page: 1, limit: 50, total: 0, totalPages: 1
-            });
-        }
-        res.status(500).json({
-            status: 'error',
-            message: err.message
-        });
+         res.json({
+            status:'error',
+            message: err.message || 'An error occurred while fetching Booking data',
+            data:null,
+           });
+    } finally {
+        
     }
 });
-
 router.patch('/event-program/:id', restrictTo('user', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
+
     const updatedRecord = await BookingData.findByIdAndUpdate(
       id,
       req.body,
@@ -74,52 +73,92 @@ router.patch('/event-program/:id', restrictTo('user', 'admin'), async (req, res)
         runValidators: true
       }
     );
+
     if (!updatedRecord) {
-      return res.status(404).json({ message: 'Record not found' });
+      return res.status(404).json({
+        message: 'Record not found'
+      });
     }
-    res.json({ status: 'success', data: updatedRecord });
+
+    res.json({
+      status: 'success',
+      data: updatedRecord
+    });
+
   } catch (err) {
-    if (err.message && err.message.includes('bufferCommands')) {
-        console.warn('[AI Studio] Using mock update response');
-        return res.json({ status: 'success', data: { _id: req.params.id, ...req.body } });
-    }
-    res.status(500).json({ status: 'error', message: err.message });
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
   }
 });
-
 router.delete('/event-program/:id', restrictTo('user', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
+
     const deletedRecord = await BookingData.findByIdAndDelete(id);
+
     if (!deletedRecord) {
-      return res.status(404).json({ message: 'Record not found' });
+      return res.status(404).json({
+        message: 'Record not found'
+      });
     }
-    res.json({ status: 'success', message: 'Record deleted successfully' });
+
+    res.json({
+      status: 'success',
+      message: 'Record deleted successfully'
+    });
+
   } catch (err) {
-    if (err.message && err.message.includes('bufferCommands')) {
-        return res.json({ status: 'success', message: 'Record deleted successfully (mock)' });
-    }
-    res.status(500).json({ status: 'error', message: err.message });
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
   }
 });
 
-router.post('/submit-event-program', restrictTo('user', 'admin'), async(req, res) => {
+router.post('/submit-event-program', restrictTo('user', 'admin'), async(req, res)=>{
     try {
-        const data = await BookingData.create(req.body);
+
+            const normalizeDataSchema = {
+              name: req.body.name || "",
+              date: req.body.date || "",
+              organizer: req.body.organizer || "",
+              presenter: req.body.presenter || "",
+              programName:req.body.programName || "",
+
+              participants:req.body.participants || 0,
+
+              eventType: req.body.eventType || "workshop",
+
+              category:req.body.category || "programming",
+
+              beneficiaries:req.body.beneficiaries || "students",
+
+              description:req.body.description || "",
+
+              roomType:req.body.roomType || "conference",
+
+              roomNumber:req.body.roomNumber || "3",
+            };
+
+
+        const total = await BookingData.countDocuments();
+        const data = await BookingData.insertOne(normalizeDataSchema);
         res.json({
-            status: 'success',
-            data: data,
+            status:'success',
+            message: 'Booking - users and admins see this',
+            data:data,
         });
     } catch (err) {
-        if (err.message && err.message.includes('bufferCommands')) {
-            console.warn('[AI Studio] Using mock submit response');
-            return res.json({ status: 'success', data: { _id: Math.random().toString(36).substring(7), ...req.body } });
-        }
-        res.status(500).json({
-            status: 'error',
-            message: err.message
-        });
+         res.json({
+            status:'error',
+            message: err.message || 'An error occurred while fetching Booking data',
+            data:null,
+           });
+    } finally {
+        
     }
 });
 
-module.exports = router;
+module.exports = router

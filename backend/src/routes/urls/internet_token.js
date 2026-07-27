@@ -57,14 +57,16 @@ router.get(
 
 
 function CalculateExpire(time,limiter){
-    if (!time || isNaN(time)) return 0;
     switch (limiter) {
         case 'm':
-            return (Math.floor(Number(time) * 60 * 1000));
+            return (Math.floor(time * 60))
+            break;
         case 'h':
-            return (Math.floor(Number(time) * 60 * 60 * 1000));
+            return (Math.floor(time * 60 * 60))
+            break;
+    
         default:
-            return 0;
+            break;
     }
 }
 router.post(
@@ -74,14 +76,14 @@ router.post(
     try {
       const requestData = req.body;
       const Datavar = Date.now();
-      const Ticketname = `IAC-TICKET-${req.body.label || 'USER'}-${Datavar}`;
-      const tokengenerated = signAccessTicket(req.user._id, req.body.Duration || '1h');
-      const calculatedDurationExpire = Datavar + CalculateExpire(req.body.hr, 'h') + CalculateExpire(req.body.mm, 'm');
+      const Ticketname = `IAC-TICKET ${req.body.label}-.${Datavar}`
+      const tokengenerated = signAccessTicket(req.user._id,req.body.Duration);
+      const calculatedDurationExpire = Datavar + CalculateExpire(req.body.hr) + CalculateExpire(req.body.mm)
       const normalizeData = {
         name:Ticketname,
         tokenTicket:tokengenerated,
         tokenExpire:calculatedDurationExpire,
-        tokenDuration:req.body.Duration || '1h',
+        tokenDuration:req.body.Duration,
         ticketStatus:true
       }
 

@@ -1,0 +1,131 @@
+camera
+{
+  "name": "Main Entrance Cam",           // required | string
+  "cameraCode": "CAM-001",               // required | string | must be unique
+  "location": "entrance",                // required | enum: internet_lounge, seminar_room_1, seminar_room_2, conference_room_1, conference_room_2, entrance, server_room, corridor, parking, reception, other
+  "customLocation": "Near Gate B",       // optional | string | use when location = "other"
+  "streamUrl": "rtsp://192.168.1.10/stream", // required | string | RTSP/HTTP stream URL
+  "snapshotUrl": "http://192.168.1.10/snapshot.jpg", // optional
+  "ipAddress": "192.168.1.10",           // optional
+  "port": 554,                           // optional | default: 554
+  "cameraType": "ip",                    // optional | enum: ip, analog, ptz, fisheye, dome
+  "resolution": "1080p",                 // optional | enum: 360p, 480p, 720p, 1080p, 2K, 4K
+  "requiresAuth": false,                 // optional | boolean
+  "streamCredentials": {                 // optional | only if requiresAuth = true
+    "username": "admin",
+    "password": "secret"
+  },
+  "description": "Covers main entrance"  // optional
+}
+
+{
+  "name": "Updated Name",                // optional
+  "location": "corridor",               // optional
+  "streamUrl": "rtsp://...",            // optional
+  "status": "maintenance",             // optional | enum: active, inactive, maintenance, offline
+  "isActive": false,                   // optional | boolean
+  "resolution": "4K",                  // optional
+  "description": "New description"     // optional
+}
+?status=active          // optional | enum: active, inactive, maintenance, offline
+?location=entrance      // optional
+?isActive=true          // optional | boolean string
+
+
+
+
+
+📊 REPORTS
+POST /api/reports/generate/lounge — Internet Lounge Report
+json{
+  "title": "Lounge Report Q1 2025",   // optional | auto-generated if omitted
+  "description": "Quarterly lounge usage analysis", // optional
+  "from": "2025-01-01",               // required | ISO date string
+  "to": "2025-03-31"                  // required | ISO date string
+}
+POST /api/reports/generate/rooms — Seminar/Conference Rooms Report
+json{
+  "title": "Conference Rooms Q1",     // optional
+  "description": "Room usage breakdown", // optional
+  "from": "2025-01-01",               // required
+  "to": "2025-03-31",                 // required
+  "roomType": "conference",           // optional | enum: conference, seminar
+  "roomNumber": 1                     // optional | enum: 1, 2, 3, 4
+}
+POST /api/reports/generate/training — Training Rooms Report
+json{
+  "title": "IT Training Summary",     // optional
+  "description": "Training sessions analysis", // optional
+  "from": "2025-01-01",               // required
+  "to": "2025-03-31",                 // required
+  "category": "programming"           // optional | enum: programming, data science, networking, robotics, drone, iot, ai, b.computing, others
+}
+POST /api/reports/generate/center — Full Center Overview
+json{
+  "title": "Center Overview Jan–Mar", // optional
+  "description": "Full center metrics", // optional
+  "from": "2025-01-01",               // required
+  "to": "2025-03-31"                  // required
+}
+GET /api/reports — Query Params
+?reportType=internet_lounge  // optional | enum: internet_lounge, seminar_rooms, training_rooms, conference_rooms, center_overview, device_status
+?status=completed             // optional | enum: generating, completed, failed
+?page=1                       // optional | default: 1
+?limit=20                     // optional | default: 20
+GET /api/reports/audit-logs — Query Params
+?action=DELETE               // optional | enum: CREATE, READ, UPDATE, DELETE, LOGIN, LOGOUT, UPLOAD, DOWNLOAD, GENERATE_REPORT, ACCESS_CAMERA, STATUS_CHANGE
+?resourceType=Camera         // optional | enum: Camera, MediaStorage, Report, EventProgram, InternetLounge, Device, User, System
+?performedBy=<userId>        // optional
+?from=2025-01-01             // optional
+?to=2025-03-31               // optional
+?page=1                      // optional
+?limit=50                    // optional
+
+🗄️ MEDIA STORAGE
+POST /api/media/upload — Upload File(s)
+Content-Type: multipart/form-data
+
+files[]       (required) | file input — max 5 files, max 100MB each
+              Allowed types: jpg, png, gif, webp, pdf, doc, docx, xls, xlsx, ppt, pptx,
+                             mp4, avi, mkv, mp3, wav, zip, rar
+
+title         (optional) | string — display title for the file
+description   (optional) | string — file description
+accessLevel   (optional) | enum: admin_only, all_staff, public — default: admin_only
+tags          (optional) | comma-separated string OR array — e.g. "training,2025,q1"
+PATCH /api/media/:id — Update File Metadata
+json{
+  "title": "Updated Title",            // optional
+  "description": "New description",   // optional
+  "accessLevel": "all_staff",         // optional | enum: admin_only, all_staff, public
+  "category": "document",             // optional | enum: document, image, video, audio, spreadsheet, presentation, archive, other
+  "tags": ["training", "2025"]        // optional | array or comma-separated string
+}
+GET /api/media — Query Params
+?category=document       // optional | enum: document, image, video, audio, spreadsheet, presentation, archive, other
+?accessLevel=admin_only  // optional | enum: admin_only, all_staff, public
+?uploadedBy=<userId>     // optional
+?search=training+report  // optional | full-text search
+?page=1                  // optional | default: 1
+?limit=20                // optional | default: 20
+?sortBy=createdAt        // optional | default: createdAt
+?order=desc              // optional | enum: asc, desc
+
+✅ Consistent Response Shapes
+All list endpoints return:
+json{
+  "message": "...",
+  "total": 100,
+  "page": 1,
+  "pages": 5,
+  "data": []
+}
+All single-resource endpoints return:
+json{
+  "message": "...",
+  "data": {}
+}
+All error responses follow your existing global error handler:
+json{
+  "message": "Error description"
+}

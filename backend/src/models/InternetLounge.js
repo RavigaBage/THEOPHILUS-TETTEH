@@ -36,7 +36,7 @@ const InternetLoungeSchema = new mongoose.Schema(
             type:String,
             default:Date.now,
         },
-        qrToken:{type:String},Signature:{
+        Signature:{
             type:String,
             required:[true,'Signature is required'],
         },

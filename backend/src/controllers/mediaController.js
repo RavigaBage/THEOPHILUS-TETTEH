@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const MediaStorage = require('../models/mediaStorage');
-const { logAudit } = require('../middleware/AuditLogger');
+const MediaStorage = require('../models/MediaStorage');
+const { logAudit } = require('../middleware/auditLogger');
 const { getCategoryFromMime, buildFileUrl, BASE_UPLOAD_DIR } = require('../middleware/upload');
 
 exports.uploadFiles = async (req, res, next) => {

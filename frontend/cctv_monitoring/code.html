@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FaciliQ | Operational Hub - CCTV Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary": "#720006",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary": "#ffffff",
+              "on-primary-fixed-variant": "#00458f",
+              "outline": "#737783",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-primary": "#ffffff",
+              "surface": "#fdf8fd",
+              "surface-bright": "#fdf8fd",
+              "on-secondary": "#ffffff",
+              "on-tertiary-container": "#ffa59b",
+              "tertiary-fixed-dim": "#ffb4ab",
+              "secondary": "#2a6b2c",
+              "on-surface-variant": "#424751",
+              "tertiary-container": "#9d000c",
+              "surface-tint": "#255dad",
+              "inverse-primary": "#abc7ff",
+              "tertiary-fixed": "#ffdad6",
+              "background": "#fdf8fd",
+              "on-primary-fixed": "#001b3f",
+              "secondary-fixed": "#acf4a4",
+              "surface-container-low": "#f7f2f8",
+              "surface-container-highest": "#e5e1e7",
+              "on-secondary-container": "#307231",
+              "on-secondary-fixed": "#002203",
+              "primary-fixed-dim": "#abc7ff",
+              "on-background": "#1c1b1f",
+              "inverse-on-surface": "#f4eff5",
+              "on-surface": "#1c1b1f",
+              "primary": "#00346f",
+              "on-secondary-fixed-variant": "#0c5216",
+              "on-primary-container": "#9bbdff",
+              "on-tertiary-fixed": "#410002",
+              "on-error-container": "#93000a",
+              "inverse-surface": "#313034",
+              "surface-container-high": "#ebe7ec",
+              "secondary-container": "#acf4a4",
+              "secondary-fixed-dim": "#91d78a",
+              "outline-variant": "#c2c6d3",
+              "primary-fixed": "#d7e2ff",
+              "surface-dim": "#ddd9de",
+              "surface-variant": "#e5e1e7",
+              "error": "#ba1a1a",
+              "surface-container": "#f1ecf2",
+              "primary-container": "#004a99",
+              "on-tertiary-fixed-variant": "#93000b"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-effect {
+        backdrop-filter: blur(12px);
+      }
+      .viscous-fluid-motion {
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      /* Custom scrollbar for data heavy sections */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #c2c6d3; border-radius: 10px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-[#fdf8fd] dark:bg-[#1c1b1f] flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#004A99] dark:text-[#d0e4ff] cursor-pointer">grid_view</span>
+<h1 class="font-['Manrope'] font-extrabold text-[#004A99] dark:text-[#d0e4ff] tracking-tighter text-2xl">FaciliQ</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="hidden md:flex gap-6 mr-6">
+<span class="font-['Manrope'] font-bold text-[#004A99]">CCTV Monitor</span>
+<span class="text-[#49454f] hover:text-[#004A99] transition-colors cursor-pointer">Software Ops</span>
+<span class="text-[#49454f] hover:text-[#004A99] transition-colors cursor-pointer">User Access</span>
+</div>
+<img class="w-10 h-10 rounded-full border-2 border-primary-fixed" data-alt="professional user profile avatar headshot in a clean office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbcZGoLOInAMDTWXO1vMT98oUzL16b2QKiPbadnCyXp9YzctHRvoc0GVAeh4rMt6AlT6YXC6L4uoCEbcNWbiKb0KeaIHdQ6Z0mxNhIo8c3EgeqT5quro7rxgi8JGaUIxjKmKvo5S9KJ9-W88PyCulhCEKDKMGHbABf-Wj5ig7-CwSJpn-h9N343mecKN2Hb4P9mYkfvL8lf10lYDp3KnoQA4g2jzDDRAQ2DvzGadHJq_Ic99bYflV7e-DOJlwTJa9sQPGRndgiS-Y"/>
+</div>
+</header>
+<!-- Sidebar (NavigationDrawer) -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 hidden md:flex flex-col bg-[#f7f2f8] backdrop-blur-xl dark:bg-[#2b2930]/80 shadow-xl dark:shadow-none pt-24 px-4 transition-all duration-250 ease-in-out">
+<p class="font-['Manrope'] uppercase tracking-widest text-xs font-semibold mb-8 px-4 opacity-70">Operational Hub</p>
+<nav class="space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#d0e4ff] text-[#00346f] border-l-4 border-[#004A99] font-semibold viscous-fluid-motion" href="#">
+<span class="material-symbols-outlined">videocam</span>
+<span class="font-['Inter'] text-sm font-medium">CCTV Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] dark:hover:bg-[#49454f] transition-all" href="#">
+<span class="material-symbols-outlined">system_update_alt</span>
+<span class="font-['Inter'] text-sm font-medium">Software Ops</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] dark:hover:bg-[#49454f] transition-all" href="#">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span class="font-['Inter'] text-sm font-medium">User Access</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] dark:hover:bg-[#49454f] transition-all" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-['Inter'] text-sm font-medium">Audit Logs</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="md:pl-64 pt-4 pb-24 md:pb-8 px-4 md:px-8">
+<!-- Dashboard Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<h2 class="font-headline text-3xl font-bold tracking-tight text-on-surface">Security Command</h2>
+<p class="font-body text-on-surface-variant">Active Monitoring: 3 High-Priority Zones</p>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-container-highest px-4 py-2 rounded-lg text-sm font-semibold hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">filter_list</span> Filter
+                </button>
+<button class="bg-primary text-on-primary px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm">add_circle</span> Add Stream
+                </button>
+</div>
+</div>
+<!-- Bento Grid Layout for Live Feeds -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Main Featured Feed: ICT Lab -->
+<div class="lg:col-span-8 bg-inverse-surface rounded-xl overflow-hidden relative group aspect-video lg:aspect-auto">
+<img class="w-full h-full object-cover opacity-80 grayscale-[30%]" data-alt="high-angle security camera view of a modern ICT lab with glowing computer monitors and sleek workstations at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6gto0qYoPTv_9mAhU3zCyO2SZtH0elGcXjICY71GhzpxJJckRUlBoOUVg0uTWq261uN2PbMTpqT6ojR1CHi9HvNn9CrwHQuo0_wpz6KvJwZ-k8eDj7grdqLyT1rkM8hVAGFvOxg9503ObQeds-PhAGQhrLPNCgFCrJ-HnIuRWQMSv3t2BwhImgfp7HASvfywGWkIZLKolgIs6l2XafFYfmYNdRSHKevK7Z_4_vEgxMbuQMKqm9LTzzOjpNAFps5NfbeqplJ-xvhw"/>
+<!-- Overlay UI -->
+<div class="absolute inset-0 p-6 flex flex-col justify-between pointer-events-none">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full">
+<div class="w-2 h-2 rounded-full bg-error animate-pulse"></div>
+<span class="text-[10px] font-bold text-white tracking-widest uppercase">Live • ICT Lab</span>
+</div>
+<div class="flex gap-2 pointer-events-auto">
+<button class="bg-white/10 hover:bg-white/20 p-2 rounded-lg backdrop-blur-md text-white transition-all">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between items-end">
+<div class="text-white/60 text-xs font-mono">
+                            CAM_04_NORTH // 2023-10-24 22:14:05
+                        </div>
+<div class="flex gap-3 pointer-events-auto">
+<button class="bg-white text-primary px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-primary-fixed-dim transition-all">
+<span class="material-symbols-outlined text-sm">photo_camera</span> Snapshot
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Side Feeds Cluster -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Internet Lounge -->
+<div class="bg-inverse-surface rounded-xl overflow-hidden relative h-48">
+<img class="w-full h-full object-cover opacity-70" data-alt="CCTV perspective of a contemporary office lounge with designer furniture and ambient soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABXu4RAouHGrq4RIsn-7s7mBCicuqN_IBK5Qqa4_zSStsJgnsSpZrjws_lpnNr3_u5_ei1pBEbQ0aRQJQvidqxKIDK1zIezqkAjSGB6cApadq11cVHELqctlZxdMR8j5ztmi2I8a-Svlya2xldlFwk0_3st2BWpAhSzxEzuLFXsBsogDgtoL3fcTAw9YyEsmnGeJ6ZTx8Y02htSTEIB3jCJkpUK3ExJzsBUMw1lgJ_EI_T2QgV9qGNN77kVDahk7tFGUno9cz64t4"/>
+<div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md px-2 py-1 rounded-md">
+<span class="text-[9px] font-bold text-white uppercase">Internet Lounge</span>
+</div>
+<div class="absolute bottom-4 right-4">
+<button class="bg-white/20 p-2 rounded-lg text-white hover:bg-white/40"><span class="material-symbols-outlined text-sm">photo_camera</span></button>
+</div>
+</div>
+<!-- Conference Room -->
+<div class="bg-inverse-surface rounded-xl overflow-hidden relative h-48">
+<img class="w-full h-full object-cover opacity-70" data-alt="wide angle security camera view of an empty boardroom with a long mahogany table and ergonomic chairs" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYzDWDrRxzZvQv5Jvoa6d-BXjcAkAIZ-bFiN4MwhQBa3JSFa7q7fkQzqix_gB0BmK9Vs1Dj2jj2J2cHv7KUMeQAqscaP4pqKEjELDfp-toX1NlexGJC1F1UY0MU53za3sG54EG0OLJSvEBlijh38pvna_YSjQe_uJcR9DexF98QOuRTpkWNTUgumPCQQ1aiOayGkFsw5T46qJ6vmFi5QDTWVpeaWtTmJWEnL395JQ7ui1x-Frqy0vdE_Le_W3wy84OrYsTpLNt_zg"/>
+<div class="absolute top-4 left-4 bg-black/40 backdrop-blur-md px-2 py-1 rounded-md">
+<span class="text-[9px] font-bold text-white uppercase">Conference Room</span>
+</div>
+<div class="absolute bottom-4 right-4">
+<button class="bg-white/20 p-2 rounded-lg text-white hover:bg-white/40"><span class="material-symbols-outlined text-sm">photo_camera</span></button>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Alerts & Registry -->
+<div class="lg:col-span-4 bg-surface-container-low rounded-xl p-6">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline font-bold text-lg">Motion Alerts</h3>
+<span class="text-[10px] font-bold text-tertiary-container bg-tertiary-fixed px-2 py-1 rounded uppercase">3 New</span>
+</div>
+<div class="space-y-4">
+<div class="flex gap-4 items-start p-3 rounded-lg bg-surface-container-lowest">
+<div class="bg-error-container p-2 rounded-lg">
+<span class="material-symbols-outlined text-on-error-container text-xl">motion_sensor_active</span>
+</div>
+<div>
+<p class="text-sm font-bold">Unusual Motion Detected</p>
+<p class="text-xs text-on-surface-variant mb-2">ICT Lab • 2 min ago</p>
+<button class="text-xs font-bold text-primary hover:underline">Review Footage</button>
+</div>
+</div>
+<div class="flex gap-4 items-start p-3 rounded-lg bg-surface-container-lowest opacity-60">
+<div class="bg-secondary-container p-2 rounded-lg">
+<span class="material-symbols-outlined text-on-secondary-container text-xl">person_check</span>
+</div>
+<div>
+<p class="text-sm font-bold">Staff Access Granted</p>
+<p class="text-xs text-on-surface-variant mb-2">South Entry • 15 min ago</p>
+<button class="text-xs font-bold text-primary hover:underline">View Log</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Camera Registry Table -->
+<div class="lg:col-span-8 bg-surface-container-low rounded-xl p-6 overflow-x-auto">
+<h3 class="font-headline font-bold text-lg mb-6">Camera Registry</h3>
+<table class="w-full text-left border-separate border-spacing-y-2">
+<thead>
+<tr class="text-on-surface-variant text-xs uppercase tracking-widest font-bold">
+<th class="pb-3 px-4">Identifier</th>
+<th class="pb-3 px-4">Room/Zone</th>
+<th class="pb-3 px-4 text-center">Status</th>
+<th class="pb-3 px-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="bg-surface-container-lowest rounded-lg group hover:bg-primary-fixed/30 transition-colors">
+<td class="py-4 px-4 font-bold rounded-l-lg">CAM-402-NW</td>
+<td class="py-4 px-4 text-on-surface-variant">ICT Lab</td>
+<td class="py-4 px-4 text-center">
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2.5 py-1 rounded-full">ACTIVE</span>
+</td>
+<td class="py-4 px-4 text-right rounded-r-lg">
+<button class="text-primary hover:bg-primary-fixed p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">settings</span></button>
+<button class="text-primary hover:bg-primary-fixed p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">history</span></button>
+</td>
+</tr>
+<tr class="bg-surface-container-lowest rounded-lg group hover:bg-primary-fixed/30 transition-colors">
+<td class="py-4 px-4 font-bold rounded-l-lg">CAM-105-LO</td>
+<td class="py-4 px-4 text-on-surface-variant">Internet Lounge</td>
+<td class="py-4 px-4 text-center">
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2.5 py-1 rounded-full">ACTIVE</span>
+</td>
+<td class="py-4 px-4 text-right rounded-r-lg">
+<button class="text-primary hover:bg-primary-fixed p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">settings</span></button>
+<button class="text-primary hover:bg-primary-fixed p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">history</span></button>
+</td>
+</tr>
+<tr class="bg-surface-container-lowest rounded-lg group hover:bg-primary-fixed/30 transition-colors">
+<td class="py-4 px-4 font-bold rounded-l-lg">CAM-088-CR</td>
+<td class="py-4 px-4 text-on-surface-variant">Conf. Room A</td>
+<td class="py-4 px-4 text-center">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-bold px-2.5 py-1 rounded-full">ALERT</span>
+</td>
+<td class="py-4 px-4 text-right rounded-r-lg">
+<button class="text-primary hover:bg-primary-fixed p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">settings</span></button>
+<button class="text-primary hover:bg-primary-fixed p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">history</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-[#fdf8fd]/90 backdrop-blur-lg dark:bg-[#1c1b1f]/90 shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)]">
+<div class="flex flex-col items-center justify-center bg-[#d0e4ff] text-[#00346f] rounded-xl px-3 py-1 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">videocam</span>
+<span class="font-['Inter'] text-[10px] font-medium">CCTV</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">install_desktop</span>
+<span class="font-['Inter'] text-[10px] font-medium">Deploy</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Inter'] text-[10px] font-medium">Users</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#49454f] dark:text-[#cac4d0] hover:bg-[#e5e1e7] scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-['Inter'] text-[10px] font-medium">Logs</span>
+</div>
+</nav>
+</body></html>

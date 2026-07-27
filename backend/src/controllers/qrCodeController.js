@@ -67,6 +67,45 @@ exports.deactivateQRCode = async (req, res, next) => {
   }
 };
 
+exports.regenerateQRCode = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { durationValue, durationUnit } = req.body;
+
+    const existingQR = await QRCode.findById(id);
+    if (!existingQR) return res.status(404).json({ error: 'QR Code not found' });
+
+    const newToken = crypto.randomBytes(16).toString('hex');
+    const durVal = durationValue ? Number(durationValue) : existingQR.durationValue;
+    const durUnit = durationUnit || existingQR.durationUnit;
+
+    const now = new Date();
+    let expiresAt = new Date(now);
+    if (durUnit === 'minutes') {
+      expiresAt.setMinutes(expiresAt.getMinutes() + Number(durVal));
+    } else if (durUnit === 'hours') {
+      expiresAt.setHours(expiresAt.getHours() + Number(durVal));
+    } else if (durUnit === 'days') {
+      expiresAt.setDate(expiresAt.getDate() + Number(durVal));
+    }
+
+    existingQR.token = newToken;
+    existingQR.expiresAt = expiresAt;
+    existingQR.durationValue = durVal;
+    existingQR.durationUnit = durUnit;
+    existingQR.status = 'active';
+
+    await existingQR.save();
+
+    const updatedQR = await QRCode.findById(id).populate('createdBy', 'name email');
+    const computedStatus = updatedQR.expiresAt < new Date() || updatedQR.status === 'deactivated' ? 'Expired' : 'Active';
+
+    res.status(200).json({ success: true, data: { ...updatedQR.toObject(), computedStatus } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.deleteQRCode = async (req, res, next) => {
   try {
     const { id } = req.params;

@@ -3,6 +3,7 @@ import { FileBarChart2, Loader2, Plus, Download, Eye, Trash2, AlertCircle, X, Se
 import { api } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Pagination } from '../components/ui/Pagination';
 import { format } from 'date-fns';
 import { useCrud } from '../hooks/useCrud';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
@@ -59,6 +60,8 @@ export default function Reports() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fuzzyFilteredReports = useFuzzySearch(reports, searchQuery, {
     keys: ['title', 'reportType', 'generatedBy.name']
@@ -68,6 +71,16 @@ export default function Reports() {
     if (filterType !== 'All' && r.reportType !== filterType) return false;
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType]);
+
+  const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE) || 1;
+  const paginatedReports = filteredReports.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   useEffect(() => {
     fetchReports();
@@ -388,7 +401,7 @@ export default function Reports() {
                   </td>
                 </tr>
               ) : (
-                filteredReports.map(report => (
+                paginatedReports.map(report => (
                   <tr key={report._id} className="hover:bg-zinc-50/50 transition-colors">
 
                     <td className="py-3 px-4">
@@ -437,6 +450,13 @@ export default function Reports() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="px-6 bg-zinc-50/50 border-t border-zinc-100">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
     </div>

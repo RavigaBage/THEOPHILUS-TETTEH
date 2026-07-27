@@ -16,6 +16,7 @@ class CommandRepository {
         }catch(error){
             return {status:"error",message:error};
         }
+s
     }
 
  
@@ -98,16 +99,25 @@ class CommandRepository {
       }
     }
 
-    async markSent(targetId) {
-        return await this.db.deviceCommandTarget.findByIdAndUpdate(
+    async markSent(targetId,status_) {
+
+        await this.db.deviceCommand.findByIdAndUpdate(
+            targetId,
+              { status: status_ },
+              { new: true }
+        );
+
+        await this.db.deviceCommandTarget.findByIdAndUpdate(
             targetId,
             { status: 'SENT' },
             { new: true }
         );
+
     }
 
     async markAcknowledged(targetId) {
-        return await this.db.deviceCommandTarget.findByIdAndUpdate(
+
+        return await CommandTarget.findByIdAndUpdate(
             targetId,
             {
                 $set: {
@@ -120,7 +130,8 @@ class CommandRepository {
     }
 
     async markCompleted(targetId) {
-        return await this.db.deviceCommandTarget.findByIdAndUpdate(
+
+        return await CommandTarget.findByIdAndUpdate(
             targetId,
             {
                 $set: {
@@ -133,7 +144,8 @@ class CommandRepository {
     }
 
     async markFailed(targetId, errorMessage) {
-        return await this.db.deviceCommandTarget.findByIdAndUpdate(
+
+        return await CommandTarget.findByIdAndUpdate(
             targetId,
             {
                 $set: {
@@ -144,13 +156,15 @@ class CommandRepository {
             { new: true }
         );
     }
+
 
     async markOffline(targetId, errorMessage) {
-        return await this.db.deviceCommandTarget.findByIdAndUpdate(
+
+        return await this.db.deviceCommand.findByIdAndUpdate(
             targetId,
             {
                 $set: {
-                    status: "FAILED",
+                    status: "OFFLINE",
                     errorMessage
                 }
             },
@@ -158,61 +172,9 @@ class CommandRepository {
         );
     }
 
-    async markTargetStatusByCommand(commandId, deviceIdString, status_, payload = {}) {
-        try {
-            const device = await this.db.devices.findOne({ deviceId: deviceIdString });
-            if (!device) {
-                console.error(`[CommandRepo] Device not found for deviceIdString: ${deviceIdString}`);
-                return;
-            }
-
-            const deviceDbId = device._id.toString();
-            const updateFields = { status: status_ };
-
-            if (status_ === "DELIVERED" || status_ === "ACKNOWLEDGED") {
-                updateFields.acknowledgedAt = new Date();
-                updateFields.status = "ACKNOWLEDGED";
-            } else if (status_ === "COMPLETED") {
-                updateFields.completedAt = new Date();
-            } else if (status_ === "FAILED") {
-                updateFields.errorMessage = payload.error || "Command failed";
-            }
-
-            const target = await this.db.deviceCommandTarget.findOneAndUpdate(
-                { commandId: commandId, deviceId: deviceDbId },
-                { $set: updateFields },
-                { new: true }
-            );
-
-            if (target && (status_ === "COMPLETED" || status_ === "FAILED")) {
-                await this.saveResult(target._id, {
-                    stdout: payload.stdout || null,
-                    stderr: payload.error || null,
-                    exitCode: status_ === "COMPLETED" ? 0 : 1,
-                    data: payload
-                });
-            }
-
-            // Rollup status to parent deviceCommand
-            const allTargets = await this.db.deviceCommandTarget.find({ commandId });
-            if (allTargets.length > 0) {
-                const finished = allTargets.every(t => ["COMPLETED", "FAILED", "TIMED_OUT", "CANCELLED"].includes(t.status));
-                if (finished) {
-                    const hasFailures = allTargets.some(t => ["FAILED", "TIMED_OUT"].includes(t.status));
-                    await this.db.deviceCommand.findByIdAndUpdate(commandId, {
-                        status: hasFailures ? "FAILED" : "COMPLETED"
-                    });
-                }
-            }
-
-            return target;
-        } catch (error) {
-            console.error("[CommandRepo] Error updating target status by command:", error);
-            throw error;
-        }
-    }
 
     async saveResult(commandTargetId, result) {
+
         await this.db.deviceCommandResult.create({
             commandTargetId,
             stdout: result.stdout || null,

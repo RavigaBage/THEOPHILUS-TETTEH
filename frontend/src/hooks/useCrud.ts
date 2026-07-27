@@ -23,7 +23,7 @@ export function useCrud<T = any>({ endpoint, onSuccess, onError }: UseCrudOption
         : '';
       const res = await api.get(`${endpoint}${queryString}`);
       if (res.data) setData(res.data);
-      if(res.total ) setpages(res.totalPages);
+      if (res.totalPages !== undefined) setpages(res.totalPages);
       return res;
     } catch (err) {
       console.error(`Failed to fetch from ${endpoint}:`, err);

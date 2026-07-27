@@ -1,8 +1,8 @@
 const Report = require('../models/Reports');
 const EventProgram = require('../models/booking'); // your existing model
-const InternetLounge = require('../models/InternetLounge');
+const InternetLounge = require('../models/internetLounge');
 const Device = require('../models/devices');
-const { logAudit } = require('../middleware/AuditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 
 const buildDateFilter = (from, to, field = 'createdAt') => ({
@@ -489,26 +489,33 @@ function buildDayRange(dateStr) {
  */
 exports.getAllReports = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const {
+      page = 1,
+      limit = 50,
+      reportType
+    } = req.query;
+
+    const filter = { isDeleted: false };
+    if (reportType && reportType !== 'All') {
+      filter.reportType = reportType;
+    }
+
     const skip = (Number(page) - 1) * Number(limit);
 
     const [reports, total] = await Promise.all([
-      Report.find({ isDeleted: false })
+      Report.find(filter)
         .populate('generatedBy', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),
-      Report.countDocuments({ isDeleted: false }),
+      Report.countDocuments(filter),
     ]);
 
     res.status(200).json({
       message: 'Reports fetched successfully.',
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit)),
-        total
-      },
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)) || 1,
       data: reports,
     });
   } catch (err) {

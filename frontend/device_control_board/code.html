@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FaciliQ | ICT Lab Control</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "secondary-fixed": "#acf4a4",
+                "error": "#ba1a1a",
+                "surface-container": "#f1ecf2",
+                "secondary-fixed-dim": "#91d78a",
+                "outline-variant": "#c2c6d3",
+                "secondary-container": "#acf4a4",
+                "surface-container-high": "#ebe7ec",
+                "inverse-primary": "#abc7ff",
+                "tertiary": "#720006",
+                "on-primary-container": "#9bbdff",
+                "on-surface": "#1c1b1f",
+                "surface": "#fdf8fd",
+                "on-secondary-fixed": "#002203",
+                "on-primary-fixed-variant": "#00458f",
+                "primary-container": "#004a99",
+                "on-secondary-container": "#307231",
+                "tertiary-container": "#9d000c",
+                "on-secondary-fixed-variant": "#0c5216",
+                "surface-dim": "#ddd9de",
+                "tertiary-fixed": "#ffdad6",
+                "on-secondary": "#ffffff",
+                "surface-variant": "#e5e1e7",
+                "primary-fixed": "#d7e2ff",
+                "on-error": "#ffffff",
+                "error-container": "#ffdad6",
+                "secondary": "#2a6b2c",
+                "primary": "#00346f",
+                "on-tertiary-fixed-variant": "#93000b",
+                "surface-container-highest": "#e5e1e7",
+                "surface-container-lowest": "#ffffff",
+                "on-tertiary": "#ffffff",
+                "on-background": "#1c1b1f",
+                "inverse-surface": "#313034",
+                "on-tertiary-container": "#ffa59b",
+                "primary-fixed-dim": "#abc7ff",
+                "inverse-on-surface": "#f4eff5",
+                "surface-container-low": "#f7f2f8",
+                "background": "#fdf8fd",
+                "on-tertiary-fixed": "#410002",
+                "on-error-container": "#93000a",
+                "on-primary-fixed": "#001b3f",
+                "on-primary": "#ffffff",
+                "surface-bright": "#fdf8fd",
+                "tertiary-fixed-dim": "#ffb4ab",
+                "outline": "#737783",
+                "on-surface-variant": "#424751",
+                "surface-tint": "#255dad"
+              },
+              fontFamily: {
+                "headline": ["Manrope"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .viscous { transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-effect { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-50 w-full px-6 py-4 flex justify-between items-center bg-[#fdf8fd] dark:bg-slate-950 transition-all duration-250 ease-in-out">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors">menu</button>
+<h1 class="text-2xl font-extrabold text-[#004A99] tracking-tighter">FaciliQ</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-slate-600 dark:text-slate-400 font-headline font-bold text-xl tracking-tight hidden md:block">ICT Lab Control</span>
+<button class="material-symbols-outlined text-[#004A99] dark:text-blue-400 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">notifications</button>
+</div>
+</header>
+<!-- NavigationDrawer (Sidebar) -->
+<aside class="fixed inset-y-0 left-0 z-[60] flex flex-col py-8 h-full w-72 rounded-r-3xl bg-[#f7f2f8] dark:bg-slate-900 shadow-2xl dark:shadow-none hidden md:flex">
+<div class="px-8 mb-8 flex flex-col gap-1">
+<div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center text-white mb-2">
+<span class="material-symbols-outlined">person</span>
+</div>
+<p class="text-[#004A99] font-black text-lg">Operational Lead</p>
+<p class="text-on-surface-variant text-xs opacity-70">Facility Management</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 text-slate-600 dark:text-slate-400 px-6 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined">videocam</span>
+<span class="font-headline text-sm font-semibold">Cameras</span>
+</a>
+<a class="flex items-center gap-4 text-slate-600 dark:text-slate-400 px-6 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="font-headline text-sm font-semibold">Deployments</span>
+</a>
+<a class="flex items-center gap-4 bg-blue-50 dark:bg-blue-900/30 text-[#004A99] border-l-4 border-[#004A99] px-6 py-3 transition-all" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span class="font-headline text-sm font-semibold">Devices</span>
+</a>
+<a class="flex items-center gap-4 text-slate-600 dark:text-slate-400 px-6 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-headline text-sm font-semibold">Alerts</span>
+</a>
+<a class="flex items-center gap-4 text-slate-600 dark:text-slate-400 px-6 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-headline text-sm font-semibold">Reports</span>
+</a>
+<a class="flex items-center gap-4 text-slate-600 dark:text-slate-400 px-6 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-headline text-sm font-semibold">Users</span>
+</a>
+<a class="flex items-center gap-4 text-slate-600 dark:text-slate-400 px-6 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-headline text-sm font-semibold">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="md:ml-72 pt-24 pb-32 px-6 md:px-10">
+<!-- Dashboard Header / Bento Summary -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+<div class="md:col-span-2 p-6 bg-gradient-to-br from-primary to-primary-container rounded-xl text-white shadow-lg">
+<h3 class="text-xl font-headline font-bold mb-2">ICT Lab Status</h3>
+<p class="text-white/80 text-sm mb-6">42 Connected Devices | 2 Critical Alerts</p>
+<div class="flex gap-3">
+<button class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-medium viscous flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">power_settings_new</span> Bulk Shutdown
+                    </button>
+<button class="bg-white text-primary px-4 py-2 rounded-lg text-sm font-bold viscous">Deploy Update</button>
+</div>
+</div>
+<div class="p-6 bg-surface-container-low rounded-xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-secondary text-4xl">check_circle</span>
+<div>
+<p class="text-sm text-on-surface-variant">Lab Uptime</p>
+<p class="text-2xl font-bold">99.8%</p>
+</div>
+</div>
+<div class="p-6 bg-surface-container-low rounded-xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-error text-4xl">warning</span>
+<div>
+<p class="text-sm text-on-surface-variant">Device Alerts</p>
+<p class="text-2xl font-bold">02</p>
+</div>
+</div>
+</div>
+<!-- Bulk Actions & Search Toolbar -->
+<div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+<div class="relative w-full md:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-3 pl-12 focus:ring-2 focus:ring-primary-container transition-all" placeholder="Search by hostname, IP, or OS..." type="text"/>
+</div>
+<div class="flex gap-2 w-full md:w-auto">
+<button class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-surface-container-low hover:bg-surface-container-highest rounded-xl text-sm font-semibold viscous">
+<span class="material-symbols-outlined text-[20px]">refresh</span> Restart
+                </button>
+<button class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-surface-container-low hover:bg-surface-container-highest rounded-xl text-sm font-semibold viscous">
+<span class="material-symbols-outlined text-[20px]">lock</span> Lock Screen
+                </button>
+</div>
+</div>
+<!-- Device Registry & Status Board -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Table Container -->
+<div class="lg:col-span-2 space-y-4">
+<h2 class="text-lg font-headline font-bold text-on-surface">Device Registry</h2>
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low">
+<th class="px-6 py-4 text-xs font-headline font-bold uppercase tracking-wider text-outline">
+<input class="rounded text-primary border-outline-variant focus:ring-primary" type="checkbox"/>
+</th>
+<th class="px-6 py-4 text-xs font-headline font-bold uppercase tracking-wider text-outline">Hostname</th>
+<th class="px-6 py-4 text-xs font-headline font-bold uppercase tracking-wider text-outline">IP Address</th>
+<th class="px-6 py-4 text-xs font-headline font-bold uppercase tracking-wider text-outline">Status</th>
+<th class="px-6 py-4 text-xs font-headline font-bold uppercase tracking-wider text-outline text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y-0">
+<!-- Device Row 1 -->
+<tr class="hover:bg-surface-container-low viscous group cursor-pointer">
+<td class="px-6 py-5"><input class="rounded text-primary border-outline-variant" type="checkbox"/></td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-sm">ICT-LAB-01</span>
+<span class="text-xs text-on-surface-variant">Windows 11 Pro</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm font-mono text-on-surface-variant">192.168.1.101</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter bg-secondary-container text-on-secondary-container">Online</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="material-symbols-outlined text-outline group-hover:text-primary viscous">settings_remote</button>
+</td>
+</tr>
+<!-- Device Row 2 -->
+<tr class="hover:bg-surface-container-low viscous group cursor-pointer bg-surface-container-low/30">
+<td class="px-6 py-5"><input class="rounded text-primary border-outline-variant" type="checkbox"/></td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-sm">ICT-LAB-02</span>
+<span class="text-xs text-on-surface-variant">Ubuntu 22.04 LTS</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm font-mono text-on-surface-variant">192.168.1.102</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter bg-surface-container-highest text-on-surface-variant">Idle</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="material-symbols-outlined text-outline group-hover:text-primary viscous">settings_remote</button>
+</td>
+</tr>
+<!-- Device Row 3 -->
+<tr class="hover:bg-surface-container-low viscous group cursor-pointer">
+<td class="px-6 py-5"><input class="rounded text-primary border-outline-variant" type="checkbox"/></td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-sm">ICT-LAB-03</span>
+<span class="text-xs text-on-surface-variant">Windows 11 Pro</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm font-mono text-on-surface-variant">192.168.1.103</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter bg-error-container text-on-error-container">Offline</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="material-symbols-outlined text-outline group-hover:text-primary viscous">settings_remote</button>
+</td>
+</tr>
+<!-- Device Row 4 -->
+<tr class="hover:bg-surface-container-low viscous group cursor-pointer bg-surface-container-low/30">
+<td class="px-6 py-5"><input class="rounded text-primary border-outline-variant" type="checkbox"/></td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-sm">ICT-LAB-04</span>
+<span class="text-xs text-on-surface-variant">Windows 11 Pro</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm font-mono text-on-surface-variant">192.168.1.104</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter bg-secondary-container text-on-secondary-container">Online</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="material-symbols-outlined text-outline group-hover:text-primary viscous">settings_remote</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Detail & Schedule Sidebar -->
+<div class="space-y-8">
+<!-- Quick Control Detail Card -->
+<div class="bg-surface-container-low rounded-3xl p-6 shadow-sm border border-outline-variant/10">
+<div class="flex justify-between items-start mb-6">
+<div class="flex flex-col">
+<span class="text-xs font-bold uppercase text-primary tracking-widest mb-1">Active Device</span>
+<h3 class="text-xl font-bold">ICT-LAB-01</h3>
+</div>
+<span class="material-symbols-outlined text-primary bg-primary-fixed p-2 rounded-xl">desktop_windows</span>
+</div>
+<div class="grid grid-cols-2 gap-3 mb-8">
+<button class="flex flex-col items-center gap-2 p-4 bg-surface rounded-2xl hover:bg-error-container hover:text-on-error-container transition-all group">
+<span class="material-symbols-outlined text-outline group-hover:text-error">power_settings_new</span>
+<span class="text-xs font-bold">Shutdown</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 bg-surface rounded-2xl hover:bg-secondary-container hover:text-on-secondary-container transition-all group">
+<span class="material-symbols-outlined text-outline group-hover:text-secondary">replay</span>
+<span class="text-xs font-bold">Restart</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 bg-surface rounded-2xl hover:bg-primary-container hover:text-white transition-all group">
+<span class="material-symbols-outlined text-outline group-hover:text-white">bedtime</span>
+<span class="text-xs font-bold">Hibernate</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 bg-surface rounded-2xl hover:bg-primary-container hover:text-white transition-all group">
+<span class="material-symbols-outlined text-outline group-hover:text-white">lock</span>
+<span class="text-xs font-bold">Lock</span>
+</button>
+</div>
+<div class="space-y-4">
+<h4 class="text-sm font-bold font-headline">Health Log</h4>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant">Last Seen</span>
+<span class="font-mono">Today, 14:22</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant">Total Uptime</span>
+<span class="font-mono">14d 03h 12m</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant">CPU Temp</span>
+<span class="font-mono text-secondary font-bold">42°C</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Scheduled Tasks Card -->
+<div class="bg-surface-container-high rounded-3xl p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-sm font-bold font-headline uppercase tracking-wider">Scheduled Tasks</h3>
+<button class="material-symbols-outlined text-primary p-1 bg-white rounded-lg text-sm">add</button>
+</div>
+<div class="space-y-3">
+<div class="bg-white/60 p-4 rounded-2xl flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-xl">timer</span>
+<div class="flex-1">
+<p class="text-sm font-bold">Daily Shutdown</p>
+<p class="text-[10px] text-on-surface-variant">Every day at 8:00 PM</p>
+</div>
+<div class="w-8 h-4 bg-primary-container rounded-full relative flex items-center">
+<div class="w-3 h-3 bg-white rounded-full absolute right-0.5"></div>
+</div>
+</div>
+<div class="bg-white/60 p-4 rounded-2xl flex items-center gap-4 opacity-60">
+<span class="material-symbols-outlined text-outline text-xl">update</span>
+<div class="flex-1">
+<p class="text-sm font-bold">OS Update Check</p>
+<p class="text-[10px] text-on-surface-variant">Sunday at 2:00 AM</p>
+</div>
+<div class="w-8 h-4 bg-outline-variant rounded-full relative flex items-center">
+<div class="w-3 h-3 bg-white rounded-full absolute left-0.5"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-[#fdf8fd]/80 dark:bg-slate-950/80 backdrop-blur-xl z-50 rounded-t-2xl md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-2 hover:text-[#004A99] dark:hover:text-blue-300 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-wider mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-2 hover:text-[#004A99] dark:hover:text-blue-300 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined">meeting_room</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-wider mt-1">Rooms</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#004A99] text-white rounded-xl px-4 py-2 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-wider mt-1">Devices</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-2 hover:text-[#004A99] dark:hover:text-blue-300 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+<span class="font-['Inter'] font-medium text-[10px] uppercase tracking-wider mt-1">QR Tokens</span>
+</a>
+</nav>
+<!-- FAB (Suppressed on detail view context, but kept for main dashboard navigation) -->
+<button class="fixed bottom-24 right-6 md:bottom-10 md:right-10 w-14 h-14 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center viscous hover:scale-110 active:scale-90 group z-40">
+<span class="material-symbols-outlined text-3xl group-hover:rotate-90 transition-transform duration-300">add</span>
+</button>
+</body></html>
