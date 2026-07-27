@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "date-fns": "^4.4.0",
+    "exceljs": "^4.4.0",
     "fuse.js": "^7.5.0",
+    "recharts": "^3.10.1",
     "vite": "8.1.5"
   }
 }

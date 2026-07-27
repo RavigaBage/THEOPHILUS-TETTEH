@@ -3,6 +3,7 @@ const EventProgram = require('../models/booking'); // your existing model
 const InternetLounge = require('../models/internetLounge');
 const Device = require('../models/devices');
 const { logAudit } = require('../middleware/auditLogger');
+const { buildMonthlyReportExcel } = require('../utils/excelGenerator');
 
 
 const buildDateFilter = (from, to, field = 'createdAt') => ({
@@ -525,91 +526,93 @@ exports.getAllReports = async (req, res, next) => {
 
 exports.getAllReportsExcel = async (req, res, next) => {
   try {
-    const {
-      date,
-      page = 1,
-      limit = 20,
-    } = req.query;
+    const { date, month, year } = req.query;
 
-    const base = date ? new Date(date) : new Date();
+    let base = new Date();
+    if (year && month) {
+      base = new Date(Number(year), Number(month) - 1, 1);
+    } else if (date) {
+      base = new Date(date);
+    }
 
-    // 🗓️ Month range
     const startOfMonth = new Date(base.getFullYear(), base.getMonth(), 1);
     startOfMonth.setHours(0, 0, 0, 0);
 
     const endOfMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0);
     endOfMonth.setHours(23, 59, 59, 999);
 
-    // 📅 Generate all days in month
-    const days = [];
-    const cursor = new Date(startOfMonth);
+    const roomFilter = { isDeleted: false, date: { $gte: startOfMonth, $lte: endOfMonth } };
+    const loungeFilter = { createdAt: { $gte: startOfMonth, $lte: endOfMonth } };
 
-    while (cursor <= endOfMonth) {
-      days.push(new Date(cursor));
-      cursor.setDate(cursor.getDate() + 1);
-    }
+    const [eventPrograms, loungeLogs] = await Promise.all([
+      EventProgram.find(roomFilter).sort({ date: -1 }).lean(),
+      InternetLounge.find(loungeFilter).sort({ createdAt: -1 }).lean(),
+    ]);
 
-    const dailyReports = await Promise.all(
-      days.map(async (day) => {
-        const start = new Date(day);
-        start.setHours(0,0,0,0);
-        const end = new Date(day);
-        end.setHours(23,59,59,999);
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const monthName = monthNames[base.getMonth()];
+    const reportYear = base.getFullYear();
 
-        const roomFilter = { isDeleted: false, date: { $gte: start, $lte: end } };
-        const loungeFilter = { createdAt: { $gte: start, $lte: end } };
-
-        const totalRoomsDay = await EventProgram.countDocuments(roomFilter);
-        const totalLoungeUsersDay = await InternetLounge.countDocuments(loungeFilter);
-        const roomsDayDetails = await EventProgram.find(roomFilter)
-          .select('name date organizer presenter programName participants eventType category beneficiaries roomNumber roomType')
-          .lean();
-
-        return {
-          date: start.toISOString().slice(0,10),
-          total_rooms_used: totalRoomsDay,
-          total_lounge_users: totalLoungeUsersDay,
-          rooms: roomsDayDetails,
-        };
-      })
-    );
-
-    const monthlyTotals = dailyReports.reduce(
-      (acc, day) => {
-        acc.totalLoungeUsers += day.total_lounge_users;
-        acc.totalRoomUsage += day.total_rooms_used;
-        acc.details = [];
-        if (Array.isArray(day.rooms) && day.rooms.length) {
-          acc.details.push(...day.rooms);
-        }
-        return acc;
-      },
-      {
-        totalLoungeUsers: 0,
-        totalRoomUsage: 0,
-      }
-    );
-
-    const skip = (Number(page) - 1) * Number(limit);
-    const paginated = dailyReports.slice(skip, skip + Number(limit));
-
-    res.status(200).json({
-      message: "Monthly report generated successfully.",
-      
-      summary: {
-        month: startOfMonth.toISOString().slice(0, 7),
-        totals: monthlyTotals,
-      },
-
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(dailyReports.length / Number(limit)),
-      },
-
-      data: paginated,
+    const workbook = await buildMonthlyReportExcel({
+      monthName,
+      year: reportYear,
+      loungeUsers: loungeLogs.length,
+      eventPrograms,
+      loungeLogs,
     });
 
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=IAC_Monthly_Report_${monthName}_${reportYear}.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getReportExcelById = async (req, res, next) => {
+  try {
+    const report = await Report.findOne({ _id: req.params.id, isDeleted: false });
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found.' });
+    }
+
+    let start = report.dateRange?.from ? new Date(report.dateRange.from) : new Date();
+    let end = report.dateRange?.to ? new Date(report.dateRange.to) : new Date();
+
+    const roomFilter = { isDeleted: false, date: { $gte: start, $lte: end } };
+    const loungeFilter = { createdAt: { $gte: start, $lte: end } };
+
+    const [eventPrograms, loungeLogs] = await Promise.all([
+      EventProgram.find(roomFilter).sort({ date: -1 }).lean(),
+      InternetLounge.find(loungeFilter).sort({ createdAt: -1 }).lean(),
+    ]);
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const monthName = monthNames[start.getMonth()];
+    const reportYear = start.getFullYear();
+
+    const workbook = await buildMonthlyReportExcel({
+      monthName,
+      year: reportYear,
+      loungeUsers: loungeLogs.length,
+      eventPrograms,
+      loungeLogs,
+    });
+
+    const safeTitle = (report.title || 'IAC_Report').replace(/[^a-zA-Z0-9_-]/g, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${safeTitle}.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
     next(err);
   }
@@ -618,32 +621,56 @@ exports.getAllReportsExcel = async (req, res, next) => {
 /**
  * GET /api/reports/summary
  *
- * Lightweight summary only — no paginated records.
- * Useful for dashboard stats cards.
- *
- * Query params:
- *   date – YYYY-MM-DD (defaults to today)
+ * Lightweight summary for dashboard stats cards and charts.
  */
 exports.getReportSummary = async (req, res, next) => {
   try {
-    const { date } = req.query;
-    const { start, end } = buildDayRange(date);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
-    const roomFilter    = { isDeleted: false, date: { $gte: start, $lte: end } };
-    const loungeFilter  = { createdAt: { $gte: start, $lte: end } };
+    const roomTodayFilter = { isDeleted: false, date: { $gte: todayStart, $lte: todayEnd } };
+    const loungeTodayFilter = { createdAt: { $gte: todayStart, $lte: todayEnd } };
 
     const [
-      totalRoomBookings,
+      currentLoungeCount,
       totalLoungeUsers,
+      activeRoomsCount,
+      totalRoomBookings,
+      connectedDevicesCount,
+      pendingReportsCount,
+      recentEvents,
+      loungeHourlyAgg,
       roomUsageBreakdown,
       eventTypeBreakdown,
-      statusBreakdown,
     ] = await Promise.all([
-      EventProgram.countDocuments(roomFilter),
-      InternetLounge.countDocuments(loungeFilter),
+      InternetLounge.countDocuments(loungeTodayFilter),
+      InternetLounge.countDocuments(),
+      EventProgram.countDocuments(roomTodayFilter),
+      EventProgram.countDocuments({ isDeleted: false }),
+      Device.countDocuments(),
+      Report.countDocuments({ isDeleted: false }),
+
+      EventProgram.find({ isDeleted: false })
+        .sort({ date: -1, createdAt: -1 })
+        .limit(6)
+        .select('name programName organizer presenter roomNumber roomType participants eventType status date')
+        .lean(),
+
+      InternetLounge.aggregate([
+        { $match: loungeTodayFilter },
+        {
+          $group: {
+            _id: { $hour: '$createdAt' },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
 
       EventProgram.aggregate([
-        { $match: roomFilter },
+        { $match: { isDeleted: false } },
         {
           $group: {
             _id: '$roomNumber',
@@ -652,37 +679,63 @@ exports.getReportSummary = async (req, res, next) => {
           },
         },
         { $sort: { _id: 1 } },
-        { $project: { roomNumber: '$_id', bookings: 1, totalParticipants: 1, _id: 0 } },
       ]),
 
       EventProgram.aggregate([
-        { $match: roomFilter },
+        { $match: { isDeleted: false } },
         { $group: { _id: '$eventType', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $project: { eventType: '$_id', count: 1, _id: 0 } },
-      ]),
-
-      EventProgram.aggregate([
-        { $match: roomFilter },
-        { $group: { _id: '$status', count: { $sum: 1 } } },
-        { $project: { status: '$_id', count: 1, _id: 0 } },
       ]),
     ]);
 
-    const totalParticipants = roomUsageBreakdown.reduce(
-      (sum, r) => sum + r.totalParticipants, 0
-    );
+    // Build 12-hour array for today's hourly traffic (8 AM to 7 PM)
+    const hourlyMap = {};
+    (loungeHourlyAgg || []).forEach(h => {
+      hourlyMap[h._id] = h.count;
+    });
+
+    const hourlyTraffic = Array.from({ length: 12 }, (_, i) => {
+      const hour = i + 8; // 8 AM to 7 PM
+      const hourLabel = hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`;
+      return {
+        hour: hourLabel,
+        visitors: hourlyMap[hour] || 0,
+      };
+    });
 
     res.status(200).json({
       message: 'Summary fetched successfully.',
-      date: start.toISOString().slice(0, 10),
       summary: {
-        totalRoomBookings,
+        currentLoungeCount,
         totalLoungeUsers,
-        totalParticipants,
-        byRoom: roomUsageBreakdown,
-        byEventType: eventTypeBreakdown,
-        byStatus: statusBreakdown,
+        activeRoomsCount,
+        totalRoomBookings,
+        connectedDevicesCount,
+        pendingReportsCount,
+        recentEvents: (recentEvents || []).map(e => ({
+          id: e._id,
+          name: e.programName || e.name,
+          organizer: e.organizer,
+          presenter: e.presenter,
+          roomNumber: e.roomNumber,
+          roomType: e.roomType,
+          participants: e.participants,
+          eventType: e.eventType,
+          status: e.status || 'AVAILABLE',
+          date: e.date ? new Date(e.date).toISOString().slice(0, 10) : 'N/A',
+        })),
+        systemMatrix: {
+          hourlyTraffic,
+          byRoom: roomUsageBreakdown.map(r => ({
+            roomNumber: `Room ${r._id}`,
+            bookings: r.bookings,
+            totalParticipants: r.totalParticipants,
+          })),
+          byEventType: eventTypeBreakdown.map(e => ({
+            eventType: e._id,
+            count: e.count,
+          })),
+        },
       },
     });
   } catch (err) {

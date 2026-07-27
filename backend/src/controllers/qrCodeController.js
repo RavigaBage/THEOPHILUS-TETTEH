@@ -2,10 +2,40 @@ const QRCode = require('../models/QRCode');
 const InternetLounge = require('../models/InternetLounge');
 const crypto = require('crypto');
 
+exports.getActiveQRCode = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const activeQR = await QRCode.findOne({
+      status: 'active',
+      expiresAt: { $gt: now }
+    }).sort({ createdAt: -1 }).populate('createdBy', 'name email');
+
+    if (!activeQR) {
+      return res.status(200).json({ success: true, data: null });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...activeQR.toObject(),
+        computedStatus: 'Active'
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.generateQRCode = async (req, res, next) => {
   try {
     const { label, durationValue, durationUnit } = req.body;
     
+    // Deactivate previous active QR codes so only the newly generated code is active
+    await QRCode.updateMany(
+      { status: 'active' },
+      { $set: { status: 'deactivated' } }
+    );
+
     // Generate token
     const token = crypto.randomBytes(16).toString('hex');
     
@@ -26,11 +56,19 @@ exports.generateQRCode = async (req, res, next) => {
       durationValue,
       durationUnit,
       expiresAt,
-      createdBy: req.user._id,
+      createdBy: req.user?._id,
       status: 'active'
     });
 
-    res.status(201).json({ success: true, data: qrCode });
+    const populatedQR = await QRCode.findById(qrCode._id).populate('createdBy', 'name email');
+
+    res.status(201).json({
+      success: true,
+      data: {
+        ...populatedQR.toObject(),
+        computedStatus: 'Active'
+      }
+    });
   } catch (err) {
     next(err);
   }

@@ -65,4 +65,30 @@ export const api = {
   patch: (endpoint: string, body: any) =>
     request(endpoint, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (endpoint: string) => request(endpoint, { method: "DELETE" }),
+  download: async (endpoint: string, fallbackFilename = "IAC_Report.xlsx") => {
+    const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Failed to download file");
+    
+    // Extract filename from header if available
+    const disposition = res.headers.get("content-disposition");
+    let filename = fallbackFilename;
+    if (disposition && disposition.includes("filename=")) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };

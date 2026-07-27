@@ -112,17 +112,27 @@ export default function Reports() {
   };
 
 
-  const handleDownload = (report: Report, e: React.MouseEvent) => {
+  const handleDownload = async (report: Report, e: React.MouseEvent) => {
     e.stopPropagation();
-    // A simple approach: output the report as a JSON blob or CSV, but we can do a simple formatted text/JSON file for now
-    // or trigger print if viewing. For now, a JSON file will suffice or basic CSV.
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href",     dataStr);
-    downloadAnchorNode.setAttribute("download", report.title + ".json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+    try {
+      const safeTitle = (report.title || 'IAC_Report').replace(/[^a-zA-Z0-9_-]/g, '_');
+      await api.download(`api/reports/${report._id}/excel`, `${safeTitle}.xlsx`);
+      success('Excel report downloaded successfully');
+    } catch (err: any) {
+      error(err.message || 'Failed to download Excel report');
+    }
+  };
+
+  const handleExportCurrentMonthExcel = async () => {
+    try {
+      await api.download(
+        `api/reports/export?month=${selectedMonth}&year=${selectedYear}`,
+        `IAC_Monthly_Report_${selectedMonth}_${selectedYear}.xlsx`
+      );
+      success('Monthly Excel report downloaded successfully');
+    } catch (err: any) {
+      error(err.message || 'Failed to export monthly Excel report');
+    }
   };
 
   const handlePrint = () => {
@@ -342,13 +352,22 @@ export default function Reports() {
           </div>
         </div>
         
-        <button 
-          onClick={() => setIsGenerateModalOpen(true)}
-          className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Generate Report
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExportCurrentMonthExcel}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Export Excel (.xlsx)
+          </button>
+          <button 
+            onClick={() => setIsGenerateModalOpen(true)}
+            className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Generate Report
+          </button>
+        </div>
       </header>
 
       <div className="mb-6 flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-zinc-200/60 shadow-sm">

@@ -6,6 +6,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Pagination } from '../components/ui/Pagination';
 import { useCrud } from '../hooks/useCrud';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
+import { api } from '../lib/api';
 
 interface QRCodeRecord {
   _id: string;
@@ -35,6 +36,7 @@ export default function AttendanceQR() {
 
   const qrCodes: QRCodeRecord[] = qrData?.data || qrData || [];
 
+  const [activeQR, setActiveQR] = useState<QRCodeRecord | null>(null);
   const [showGenerateForm, setShowGenerateForm] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -45,6 +47,19 @@ export default function AttendanceQR() {
 
   const [viewQR, setViewQR] = useState<QRCodeRecord | null>(null);
   const [modalAction, setModalAction] = useState<{ type: 'deactivate' | 'delete' | 'regenerate', code: QRCodeRecord } | null>(null);
+
+  const fetchActiveQR = async () => {
+    try {
+      const res = await api.get('api/qrcodes/active');
+      if (res?.data) {
+        setActiveQR(res.data);
+      } else {
+        setActiveQR(null);
+      }
+    } catch (err) {
+      console.error('Error fetching active QR:', err);
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -72,6 +87,7 @@ export default function AttendanceQR() {
 
   useEffect(() => {
     fetchQRCodes();
+    fetchActiveQR();
   }, [fetchQRCodes]);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -81,8 +97,11 @@ export default function AttendanceQR() {
       setShowGenerateForm(false);
       setFormData({ label: '', durationValue: '1', durationUnit: 'hours' });
       if (res?.data) {
+        setActiveQR(res.data);
         setViewQR(res.data);
       }
+      fetchActiveQR();
+      fetchQRCodes();
     } catch {
       // handled by useCrud
     }
@@ -106,6 +125,8 @@ export default function AttendanceQR() {
         }
       }
       setModalAction(null);
+      fetchActiveQR();
+      fetchQRCodes();
     } catch {
       // handled by useCrud
     }
@@ -229,6 +250,97 @@ export default function AttendanceQR() {
           </form>
         </div>
       )}
+
+      {/* Active Attendance QR Banner Card */}
+      <div className="mb-8">
+        {activeQR ? (
+          <div className="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 text-white rounded-3xl p-8 shadow-xl border border-zinc-800 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-12 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
+              <div className="space-y-4 max-w-xl text-center lg:text-left">
+                <div className="flex items-center justify-center lg:justify-start gap-3">
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    ACTIVE ATTENDANCE CODE
+                  </span>
+                  <span className="text-xs text-zinc-400">
+                    Expires: {format(new Date(activeQR.expiresAt), 'h:mm a (MMM d)')}
+                  </span>
+                </div>
+
+                <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
+                  {activeQR.label || 'Active Internet Lounge Session'}
+                </h2>
+
+                <p className="text-zinc-300 text-sm leading-relaxed">
+                  Students and visitors can scan this QR code or navigate directly to register attendance.
+                </p>
+
+                <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-zinc-400">
+                  <span className="bg-zinc-800/80 px-3 py-1.5 rounded-lg border border-zinc-700">
+                    Submissions: <strong className="text-white">{activeQR.submissionCount || 0}</strong>
+                  </span>
+                  <span className="bg-zinc-800/80 px-3 py-1.5 rounded-lg border border-zinc-700">
+                    Token: <strong className="text-white font-mono">{activeQR.token}</strong>
+                  </span>
+                </div>
+
+                <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                  <button
+                    onClick={() => downloadQR(activeQR)}
+                    className="px-4 py-2 bg-white text-zinc-900 hover:bg-zinc-100 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download PNG
+                  </button>
+                  <button
+                    onClick={() => setModalAction({ type: 'deactivate', code: activeQR })}
+                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    <Ban className="w-4 h-4" />
+                    Deactivate Code
+                  </button>
+                </div>
+              </div>
+
+              {/* QR Code SVG Display */}
+              <div className="bg-white p-5 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-3 shrink-0">
+                <QRCodeSVG
+                  id={`qr-${activeQR._id}`}
+                  value={`${window.location.origin}/attendance/form?token=${activeQR.token}`}
+                  size={160}
+                  level="H"
+                  includeMargin={true}
+                />
+                <span className="text-[10px] font-mono font-bold tracking-wider text-zinc-500 uppercase">
+                  Scan To Sign In
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-100 rounded-xl text-amber-700 shrink-0">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-900 text-sm">No Active Attendance QR Code</h3>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Press <strong>"Generate QR Code"</strong> above to create an active temporary code for student sign-ins.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowGenerateForm(true)}
+              className="px-4 py-2 bg-amber-900 text-white hover:bg-amber-800 rounded-xl text-xs font-semibold shrink-0 transition-colors shadow-sm"
+            >
+              Generate Code Now
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="mb-6 flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-zinc-200/60 shadow-sm">
         <div className="flex-1 relative w-full">
