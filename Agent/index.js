@@ -64,12 +64,15 @@ function buildRegistrationPayload() {
         authenticationMode:  config.authenticationMode  || "token",
         encryptionEnabled:   config.encryptionEnabled   ?? true,
 
-        permissions: {
+       permissions: {
             allowRemoteShutdown:   config.permissions?.allowRemoteShutdown   ?? true,
-            allowRemoteRestart:    config.permissions?.allowRemoteRestart     ?? true,
-            allowRemoteLock:       config.permissions?.allowRemoteLock        ?? true,
-            allowRemoteMonitoring: config.permissions?.allowRemoteMonitoring  ?? true,
-            allowFileTransfer:     config.permissions?.allowFileTransfer      ?? false,
+            allowRemoteRestart:    config.permissions?.allowRemoteRestart    ?? true,
+            allowRemoteLock:       config.permissions?.allowRemoteLock       ?? true,
+            allowRemoteMonitoring: config.permissions?.allowRemoteMonitoring ?? true,
+            allowFileTransfer:     config.permissions?.allowFileTransfer     ?? false,
+            allowRemoteUpdate:     config.permissions?.allowRemoteUpdate     ?? true,
+            allowRemoteCommandExecution: config.permissions?.allowRemoteCommandExecution ?? false,
+            allowProcessStart:     config.permissions?.allowProcessStart     ?? false,
         },
 
         adminNotes: config.adminNotes || null,
