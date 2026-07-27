@@ -32,24 +32,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const checkAuth = async (): Promise<boolean> => {
     try {
-      const data = await api.get("api/auth/verify");
-      setUser(data.user);
-      return true;
-    } catch {
-      // Access token missing/expired — try the refresh cookie once.
-      const refreshed = await refreshAccessToken();
-      if (!refreshed) {
-        setUser(null);
-        return false;
-      }
-      try {
         const data = await api.get("api/auth/verify");
         setUser(data.user);
         return true;
-      } catch {
-        setUser(null);
-        return false;
-      }
+    }
+    catch {
+        const refreshed = await refreshAccessToken();
+
+        if (!refreshed) {
+            setUser(null);
+            return false;
+        }
+
+        const data = await api.get("api/auth/verify");
+        setUser(data.user);
+        return true;
     }
   };
 

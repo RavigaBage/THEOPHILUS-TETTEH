@@ -1,6 +1,7 @@
 require("dotenv").config();
 const EventProgram = require("./src/models/booking");
 const InternetLounge = require("./src/models/InternetLounge");
+const UsersModel = require("./src/models/User");
 const connectDB = require('./src/config/db');
 
 const mongoose = require('mongoose');
@@ -33,7 +34,7 @@ function formatTime(date) {
 }
 
 // ---------- Configuration ----------
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/yourdb';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/Iac_db';
 const YEAR = 2025;
 const START_DATE = new Date(YEAR, 0, 1);
 const END_DATE = new Date(YEAR, 11, 31, 23, 59, 59);
@@ -133,6 +134,14 @@ async function seed() {
 
     await seedLounge();
     await seedEvents();
+    
+    UsersModel.insertOne({
+      name:'Administrator',
+      email:"admin@iac.com",
+      password:"Admin@1234",
+      role:"admin"
+    });
+    console.log('seeding users');
 
     console.log('Seeding completed!');
     process.exit(0);

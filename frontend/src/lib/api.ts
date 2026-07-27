@@ -1,22 +1,39 @@
 
 const AUTH_ENDPOINTS = ["auth/refresh", "auth/verify", "auth/login"];
-const API_BASE_URL = import.meta.env.PUBLIC_API_SERVER_URL || "http://localhost:3001";
+const API_BASE_URL = import.meta.env.PUBLIC_API_SERVER_URL || "http://localhost:5000";
 
 let refreshPromise: Promise<boolean> | null = null;
+let accessToken: string | null = null;
 
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+  console.log('accessToken')
+}
 export async function refreshAccessToken(): Promise<boolean> {
-  if (!refreshPromise) {
-    refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    })
-      .then((res) => res.ok)
-      .catch(() => false)
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-  return refreshPromise;
+    if (!refreshPromise) {
+        refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+        .then(async (res) => {
+            if (!res.ok) return false;
+
+            const data = await res.json();
+
+            setAccessToken(data.access);
+
+            return true;
+        })
+        .catch(() => false)
+        .finally(() => {
+            refreshPromise = null;
+        });
+    }
+
+    return refreshPromise;
 }
 
 function redirectToLogin() {
@@ -30,11 +47,13 @@ async function request(
   options: RequestInit = {},
   isRetry = false
 ): Promise<any> {
+  console.log(accessToken);
   const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
     ...options,
-    credentials: "include", 
+        credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(options.headers || {}),
     },
   });

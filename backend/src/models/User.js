@@ -11,16 +11,16 @@ const UserSchema = new mongoose.Schema(
         },
         email: {
             type:String,
-            required: [true,'email is required'],
+            required: [true,'Email is required'],
             trim:true,
             lowercase:true,
             unique:true,
         },
         password: {
             type:String,
-            required: [true,'Password id required'],
+            required: [true,'Password is required'],
             select:false,
-            minlength:[8,'password must be at least 8 characters long'],
+            minlength:[8,'Password must be at least 8 characters long'],
         },
         refreshToken: {
             type:String,
@@ -35,15 +35,16 @@ const UserSchema = new mongoose.Schema(
     {timestamps:true}
 );
 
-UserSchema.pre('save', async function(next){
-    if(!this.isModified('password')) return next();
+UserSchema.pre('save', async function(){
+    if(!this.isModified('password')) return;
 
     this.password = await bcrypt.hash(this.password, 12);
-    next();
-})
-
+    // no next() needed — async middleware resolves when this function returns,
+    // and any thrown error (e.g. from bcrypt.hash) automatically fails the save
+});
 
 UserSchema.methods.comparePassword = async function(userPassword){
     return await bcrypt.compare(userPassword, this.password);
 }
+
 module.exports = mongoose.model('Iac_users',UserSchema,'Iac_users');
