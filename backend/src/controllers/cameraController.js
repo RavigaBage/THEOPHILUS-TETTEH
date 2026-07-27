@@ -1,5 +1,5 @@
-const Camera = require('../models/Camera');
-const { logAudit } = require('../middleware/auditLogger');
+const Camera = require('../models/camera');
+const { logAudit } = require('../middleware/AuditLogger');
 
 
 exports.addCamera = async (req, res, next) => {

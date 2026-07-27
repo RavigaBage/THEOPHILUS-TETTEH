@@ -1,8 +1,8 @@
 const Report = require('../models/Reports');
 const EventProgram = require('../models/booking'); // your existing model
-const InternetLounge = require('../models/internetLounge');
+const InternetLounge = require('../models/InternetLounge');
 const Device = require('../models/devices');
-const { logAudit } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/AuditLogger');
 const { buildMonthlyReportExcel } = require('../utils/excelGenerator');
 
 

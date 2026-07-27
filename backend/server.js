@@ -34,13 +34,12 @@ const IpRateLimiter = rateLimit({
 
 app.use(cookieParser());
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}))
+}));
 const { commandService } = initServices(socketService);
-app.use(IpRateLimiter);
 app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/public', require('./src/routes/public'));
 app.use('/api', createProtectedRoutes(commandService));
@@ -54,7 +53,7 @@ app.use((err,req,res,next)=>{
 
 
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.BACKEND_PORT || 5000;
 
 
 io.on("connection", (socket) => {

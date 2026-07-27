@@ -1,6 +1,6 @@
 const express = require('express');
 const {protect, restrictTo } = require('./../../middleware/auth');
-const LoungeData = require('./../../models/internetLounge');
+const LoungeData = require('./../../models/InternetLounge');
 const router = express.Router();
 
 
@@ -143,7 +143,7 @@ router.post('/submit-lounge-data', restrictTo('user', 'admin'), async(req, res)=
 
 
         const total = await LoungeData.countDocuments();
-        const data = await LoungeData.insertOne(normalizeDataSchema);
+        const data = await LoungeData.create(normalizeDataSchema);
         res.json({
             status:'success',
             message: 'Lounge - users and admins see this',
