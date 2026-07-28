@@ -1,24 +1,20 @@
 import { useMemo } from 'react';
-import Fuse from 'fuse.js';
 
-interface UseFuzzySearchOptions {
+interface FuzzyOptions {
   keys: string[];
-  threshold?: number;
 }
 
-export function useFuzzySearch<T>(list: T[], query: string, options: UseFuzzySearchOptions) {
-  const fuse = useMemo(() => {
-    return new Fuse(list, {
-      keys: options.keys,
-      threshold: options.threshold ?? 0.3, // 0.0 is perfect match, 1.0 is anything
-      ignoreLocation: true,
+export function useFuzzySearch<T>(items: T[], query: string, options: FuzzyOptions): T[] {
+  return useMemo(() => {
+    if (!query.trim()) return items;
+    const lowerQuery = query.toLowerCase();
+
+    return items.filter((item) => {
+      return options.keys.some((key) => {
+        const value = (item as any)[key];
+        if (!value) return false;
+        return String(value).toLowerCase().includes(lowerQuery);
+      });
     });
-  }, [list, options.keys, options.threshold]);
-
-  const results = useMemo(() => {
-    if (!query) return list;
-    return fuse.search(query).map((result) => result.item);
-  }, [fuse, query, list]);
-
-  return results;
+  }, [items, query, options.keys]);
 }

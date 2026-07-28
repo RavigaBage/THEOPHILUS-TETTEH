@@ -1,121 +1,98 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const { execSync } = require('child_process');
 const cookieParser = require('cookie-parser');
-const connectDB = require('./src/config/db');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const app = express();
-const http = require("http");
-const { Server } = require("socket.io");
+const connectDB = require('./src/config/db');
 
-const server = http.createServer(app);
-const SocketService = require("./src/services/socketService");
-const {registerAgentService} = require("./src/services/RegisterDevice");
-const { initServices } = require("./src/services");
-const createProtectedRoutes =require('./src/routes/protected');
-const io = new Server(server, {
-    cors: {
-        origin: "*"
-    }
-});
-const socketService = new SocketService(io);
-socketService.emitToDevice("LAB-PC-01", "cmd:test", {
-    message: "Hello from server 🎯"
-});
+const app = express();
+
+// Ensure uploads folder exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Connect to MongoDB or Memory Server
 connectDB();
 
+// Ensure frontend build exists
+const frontendDist = path.join(__dirname, '../frontend/dist');
+const indexPath = path.join(frontendDist, 'index.html');
+if (!fs.existsSync(indexPath)) {
+  console.log('⚡ Building frontend bundle for dev server...');
+  try {
+    execSync('npm run build --workspace=frontend', { stdio: 'inherit' });
+    console.log('✅ Frontend build complete.');
+  } catch (err) {
+    console.error('❌ Frontend build failed:', err.message);
+  }
+}
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.set('trust proxy', 1);
 
-const IpRateLimiter = rateLimit({
-   windowMs: 15 * 60 * 1000,
-    max: 50,
-    message: { message: 'Too many requests from this IP' },
-    validate: { xForwardedForHeader: false },
-});
-
-app.use(cookieParser());
-app.use(cors({
-    origin: 'http://localhost:3000',
+// CORS configuration (allow browser client origins)
+app.use(
+  cors({
+    origin: true,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}))
-const { commandService, dispatcher } = initServices(socketService);
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+);
 
-app.use('/api', IpRateLimiter);
+// Rate limiter for API
+const apiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: { message: 'Too many requests, please try again later.' },
+  validate: { xForwardedForHeader: false },
+});
+app.use('/api', apiRateLimiter);
+
+// API Routes
 app.use('/api/auth', require('./src/routes/auth'));
-app.use('api/summary', require('./src/routes/urls/summary'));
+app.use('/api/app-auth', require('./src/routes/appAuth'));
+app.use('/api', require('./src/routes/checkins'));
+app.use('/api', require('./src/routes/leaderboard'));
+app.use('/api', require('./src/routes/appBookings'));
+app.use('/api', require('./src/routes/announcements'));
+app.use('/api', require('./src/routes/issues'));
+app.use('/api', require('./src/routes/staffManagement'));
 app.use('/api/public', require('./src/routes/public'));
-app.use('/api', createProtectedRoutes(commandService));
-const { protect } = require('./src/middleware/auth');
-app.use('/uploads', protect, express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Serve uploaded images (announcements, avatars)
+app.use('/uploads', express.static(uploadsDir));
+
+// Serve compiled React frontend
+app.use(express.static(frontendDist));
+
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
+
+// Fallback to React index.html for SPA routing
 app.get(/^(?!\/api).*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(503).send('Application is starting up... Please refresh in a few seconds.');
+  }
 });
 
+// Error handling middleware
 app.use((err, req, res, next) => {
-    if (err.name === 'MongooseError' || err.name === 'MongoNetworkError' || err.message?.includes('buffering timed out')) {
-        console.warn('[AI Studio] Database offline — returning mock empty response');
-        if (req.method === 'GET') {
-          if (req.path.includes('validate')) return res.json({ success: true, data: { label: 'Mock Session', token: 'mocktoken' } }); return res.json(req.path.endsWith('s') || req.path.endsWith('s/') ? [] : {});
-        }
-        return res.status(200).json({ success: true, data: { _id: 'mock_id', label: 'Mock Session', durationValue: 1, durationUnit: 'hours', token: 'mocktoken123', computedStatus: 'Active', createdAt: new Date(), expiresAt: new Date(Date.now() + 3600000) } });
-    }
-    next(err);
-});
-
-app.use((err,req,res,next)=>{
-    console.error(err.stack);
-    res.status(err.statusCode || 500).json({
-        message: err.message || 'Internal server error',
-    });
-});
-
-
-
-const PORT = process.env.NODE_ENV === 'production' ? 3000 : 3001;
-
-
-io.on("connection", (socket) => {
-    console.log("🟢 Agent connected:", socket.id);
-
-
-
-    socket.on("disconnect", () => {
-        console.log("🔴 Agent disconnected:", socket.id);
-    });
-
-    socket.on("agent:register", async (data) => {
-        socket.deviceId = data.deviceId;
-        socket.join(`device:${data.deviceId}`);
-        await registerAgentService(data);
-        socketService.registerDevice(data.deviceId, socket);
-
-        if (dispatcher) {
-            dispatcher.registerDeviceListeners(socket);
-        }
-
-        console.log('devices registered');
-    });
-
-    socket.on("cmd:test", (payload) => {
-    console.log("📨 Test command received:", payload);
-
-    socket.emit("cmd:test:response", {
-      message: "Agent received command successfully 🎯",
-      time: Date.now()
-    });
+  console.error('Server Error:', err.stack || err.message);
+  res.status(err.statusCode || 500).json({
+    message: err.message || 'Internal Server Error',
   });
-
 });
 
-app.get("/test", (req, res) => {
-    io.emit("cmd:test", { message:''});
-    res.send("Test command sent");
-});
-server.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 IAC System & Mobile Hub running on port ${PORT}`);
 });

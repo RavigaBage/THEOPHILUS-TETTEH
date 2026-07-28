@@ -1,68 +1,41 @@
-import { AlertTriangle, X } from 'lucide-react';
+import React from 'react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
   title: string;
   message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
   confirmText?: string;
   cancelText?: string;
-  isDestructive?: boolean;
 }
 
-export function ConfirmModal({
+export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
-  onClose,
-  onConfirm,
   title,
   message,
+  onConfirm,
+  onCancel,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  isDestructive = true,
-}: ConfirmModalProps) {
+}) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
-        onClick={onClose}
-      ></div>
-      <div className="bg-white rounded-2xl shadow-xl border border-zinc-200/60 w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-200">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-        
-        <div className="flex items-center gap-4 mb-4">
-          <div className={`p-3 rounded-full ${isDestructive ? 'bg-red-50' : 'bg-blue-50'}`}>
-            <AlertTriangle className={`w-6 h-6 ${isDestructive ? 'text-red-500' : 'text-blue-500'}`} />
-          </div>
-          <h2 className="text-xl font-semibold text-zinc-900">{title}</h2>
-        </div>
-        
-        <p className="text-zinc-600 mb-8">{message}</p>
-        
-        <div className="flex items-center justify-end gap-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+        <h3 className="text-lg font-bold text-slate-100">{title}</h3>
+        <p className="text-slate-300 mt-2 text-sm">{message}</p>
+        <div className="flex justify-end gap-3 mt-6">
           <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-lg hover:bg-zinc-50 transition-colors"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700/60 rounded-lg transition"
           >
             {cancelText}
           </button>
           <button
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
-              isDestructive 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-zinc-900 hover:bg-zinc-800'
-            }`}
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-medium bg-rose-600 hover:bg-rose-500 text-white rounded-lg transition"
           >
             {confirmText}
           </button>
@@ -70,4 +43,4 @@ export function ConfirmModal({
       </div>
     </div>
   );
-}
+};

@@ -1,6 +1,8 @@
 {
-  "name": "IAC Remote Management System",
-  "description": "Comprehensive remote management, device monitoring, and reporting suite",
+  "name": "IAC Mobile & Staff Management Portal",
+  "description": "Full-stack IAC portal featuring staff management (lounge, room booking, devices, reports, QR tokens) and mobile visitor hub (check-in tickets with streaks, leaderboard, room booking requests, image-backed announcements, issue flagging with voting).",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
