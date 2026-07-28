@@ -34,8 +34,12 @@ const BENEFICIARIES = [
 ];
 
 const ROOM_TYPES = [
-  "conference",
-  "seminar",
+  'Seminar Room 1',
+  'Seminar Room 2',
+  'Seminar Room 3',
+  'Seminar Room 4',
+  'Conference Room',
+  'Training Lab'
 ];
 
 const ROOM_STATUS = [
@@ -50,9 +54,8 @@ const ROOM_STATUS = [
 const EventProgramSchema = new mongoose.Schema(
   {
     startDate: { type: Date, required: true },
-    endDate:   { type: Date, required: true },   // same as startDate for single-day
+    endDate:   { type: Date, required: true },   
     status:    { type: String, enum: ['reserved', 'confirmed', 'cancelled'], default: 'reserved' },
-
     roomNumber: { type: Number, enum: [1, 2, 3, 4], required: true },
     name: {
       type: String,

@@ -3,7 +3,7 @@ const router = express.Router();
 const qrCodeController = require('../../controllers/qrCodeController');
 
 router.get('/active', qrCodeController.getActiveQRCode);
-router.post('/', qrCodeController.generateQRCode);
+router.post('/generate', qrCodeController.generateQRCode);
 router.get('/', qrCodeController.getQRCodes);
 router.patch('/:id/deactivate', qrCodeController.deactivateQRCode);
 router.patch('/:id/regenerate', qrCodeController.regenerateQRCode);

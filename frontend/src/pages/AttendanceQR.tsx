@@ -93,7 +93,7 @@ export default function AttendanceQR() {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await createRecord(formData, 'api/qrcodes');
+      const res = await createRecord(formData, 'api/qrcodes/generate/');
       setShowGenerateForm(false);
       setFormData({ label: '', durationValue: '1', durationUnit: 'hours' });
       if (res?.data) {

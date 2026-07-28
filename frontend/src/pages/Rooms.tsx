@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, List, Plus, Save, X, Edit2, Trash2, MonitorPlay, ChevronLeft, ChevronRight, CheckCircle, Search } from 'lucide-react';
+import { Calendar, List, Plus, Save, X, Edit2, Trash2, Eye, MonitorPlay, ChevronLeft, ChevronRight, CheckCircle, Search } from 'lucide-react';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Pagination } from '../components/ui/Pagination';
 import { useCrud } from '../hooks/useCrud';
@@ -20,27 +20,42 @@ const ROOM_INVENTORY = [
 ];
 
 const EVENT_TYPES = [
-  "Workshop", "Seminar", "Training Session", "Conference", 
-  "Corporate Meeting", "Product Launch", "Networking Event", 
-  "Community Outreach", "Religious Gathering", "Examination/Assessment", "Other"
+  "workshop",
+  "teaching",
+  "meetings",
+  "v.conference",
+  "discussion",
+  "l.institution",
+  "it training",
+  "project",
 ];
 
 const CATEGORIES = [
-  "Educational", "Corporate/Business", "Government", "NGO/Non-Profit", 
-  "Religious", "Social/Community", "Health & Wellness", "Technology/ICT", 
-  "Agriculture", "Other"
+  "programming",
+  "data science",
+  "networking",
+  "robotics",
+  "drone",
+  "iot",
+  "ai",
+  "b.computing",
+  "others",
 ];
 
 const BENEFICIARIES = [
-  "Students", "Youth", "Women", "Persons with Disabilities (PWDs)", 
-  "General Public", "Corporate Employees", "Government Officials", 
-  "Farmers", "Entrepreneurs/SMEs", "Community Members", "Children", "Other"
+  "government officials",
+  "senior citizens",
+  "local residents",
+  "students",
+  "business",
+  "others",
 ];
+
 
 interface Booking {
   _id: string;
   date: string;
-  room: string;
+  roomType: string;
   rate: number;
   organizer: string;
   presenter: string;
@@ -48,11 +63,23 @@ interface Booking {
   participants: number;
   eventType: string;
   category: string;
-  beneficiaries: string[];
+  beneficiaries: string;
   description: string;
   paymentStatus: 'Unpaid' | 'Paid' | 'Partially Paid';
   amountDue: number;
+  endDate:Date;
+  startDate:Date;
   status: 'Booked' | 'Occupied' | 'Completed' | 'Cancelled';
+}
+
+// Small read-only field used inside the View modal
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-0.5">{label}</div>
+      <div className="text-sm font-medium text-zinc-900">{value || '—'}</div>
+    </div>
+  );
 }
 
 export default function Rooms() {
@@ -69,7 +96,7 @@ export default function Rooms() {
   } = useCrud<any>({ endpoint: 'api/bookings/event-program?limit=500' });
 
   // API returns { status, data: [...] } instead of direct array sometimes.
-  const bookings: Booking[] = bookingsData?.data || bookingsData || [];
+  const bookings: Booking[] = bookingsData?.data || bookingsData || "";
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,11 +105,11 @@ export default function Rooms() {
   const ITEMS_PER_PAGE = 10;
 
   const fuzzyFilteredBookings = useFuzzySearch(bookings, searchQuery, {
-    keys: ['programName', 'organizer', 'presenter', 'room']
+    keys: ['programName', 'organizer', 'presenter', 'roomType']
   });
 
   const filteredBookings = fuzzyFilteredBookings.filter(b => {
-    if (filterRoom !== 'All' && b.room !== filterRoom) return false;
+    if (filterRoom !== 'All' && b.roomType !== filterRoom) return false;
     return true;
   });
 
@@ -105,17 +132,22 @@ export default function Rooms() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
+  // View modal state (Read of C.R.U.D)
+  const [viewBooking, setViewBooking] = useState<Booking | null>(null);
+
   const [formData, setFormData] = useState({
     date: '',
-    room: ROOM_INVENTORY[0].name,
+    roomType: ROOM_INVENTORY[0].name,
     organizer: '',
     presenter: '',
     programName: '',
     participants: 1,
     eventType: EVENT_TYPES[0],
     category: CATEGORIES[0],
-    beneficiaries: [] as string[],
+    beneficiaries:'',
     description: '',
+    endDate:'',
+    startDate:'',
     paymentStatus: 'Unpaid',
   });
 
@@ -126,18 +158,20 @@ export default function Rooms() {
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
 
-  const handleBeneficiariesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const options = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData(prev => ({ ...prev, beneficiaries: options }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'date' && { startDate: value })
+    }));
   };
 
   const calculateDerivedFields = () => {
-    const roomDetails = ROOM_INVENTORY.find(r => r.name === formData.room);
+    const roomDetails = ROOM_INVENTORY.find(r => r.name === formData.roomType);
     const rate = roomDetails?.rate || 0;
     const amountDue = rate;
     
@@ -155,11 +189,13 @@ export default function Rooms() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.date) newErrors.date = "Date is required";
+    if (!formData.endDate) newErrors.endDate = "End Date is required";
     if (!formData.organizer.trim()) newErrors.organizer = "Organizer is required";
     if (!formData.presenter.trim()) newErrors.presenter = "Presenter is required";
     if (!formData.programName.trim()) newErrors.programName = "Program Name is required";
     if (!formData.participants || formData.participants < 1) newErrors.participants = "Must be at least 1";
     if (!formData.beneficiaries || formData.beneficiaries.length === 0) newErrors.beneficiaries = "Select at least one beneficiary";
+    console.log('error validating',newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -173,7 +209,7 @@ export default function Rooms() {
 
       // Validation: Check double booking
       const conflict = bookings.find(b => 
-        b.room === formData.room && 
+        b.roomType === formData.roomType && 
         startOfDay(new Date(b.date)).getTime() === startOfDay(new Date(formData.date)).getTime() &&
         b.status !== 'Cancelled' &&
         b._id !== editingId
@@ -199,7 +235,7 @@ export default function Rooms() {
   const handleEdit = (booking: Booking) => {
     setFormData({
       date: new Date(booking.date).toISOString().slice(0, 10),
-      room: booking.room,
+      roomType: booking.roomType,
       organizer: booking.organizer,
       presenter: booking.presenter,
       programName: booking.programName,
@@ -208,6 +244,8 @@ export default function Rooms() {
       category: booking.category,
       beneficiaries: booking.beneficiaries,
       description: booking.description || '',
+      endDate:new Date(booking.endDate).toISOString().slice(0, 10),
+      startDate:new Date(booking.date).toISOString().slice(0, 10),
       paymentStatus: booking.paymentStatus,
     });
     setEditingId(booking._id);
@@ -240,15 +278,17 @@ export default function Rooms() {
     setErrors({});
     setFormData({
       date: '',
-      room: ROOM_INVENTORY[0].name,
+      roomType: ROOM_INVENTORY[0].name,
       organizer: '',
       presenter: '',
       programName: '',
       participants: 1,
       eventType: EVENT_TYPES[0],
       category: CATEGORIES[0],
-      beneficiaries: [],
+      beneficiaries: "",
       description: '',
+      endDate:'',
+      startDate:'',
       paymentStatus: 'Unpaid',
     });
   };
@@ -280,7 +320,7 @@ export default function Rooms() {
         
         // Find bookings for this day
         const dayBookings = filteredBookings.filter(b => 
-          isSameDay(new Date(b.date), cloneDay) && b.status !== 'Cancelled'
+          isSameDay(new Date(b.startDate), cloneDay) && b.status !== 'Cancelled'
         );
 
         days.push(
@@ -306,13 +346,40 @@ export default function Rooms() {
                 if (b.status === 'Occupied') bg = 'bg-amber-50 text-amber-700 border-amber-200';
 
                 return (
-                  <div 
+                  <div
                     key={b._id}
-                    onClick={(e) => { e.stopPropagation(); handleEdit(b); }}
-                    className={`text-xs px-1.5 py-1 rounded truncate border ${bg}`}
-                    title={`${b.room} - ${b.programName}`}
+                    onClick={(e) => { e.stopPropagation(); setViewBooking(b); }}
+                    className={`group relative text-xs px-1.5 py-1 rounded border ${bg} flex items-center gap-1 cursor-pointer`}
+                    title={`${b.roomType} - ${b.programName}`}
                   >
-                    {b.room.split(' ')[0]} {b.room.split(' ')[1]}: {b.programName}
+                    <span className="truncate flex-1 min-w-0">
+                      {b.roomType.split(' ')[0]} {b.roomType.split(' ')[1]}: {b.programName}
+                    </span>
+
+                    {/* CRUD action icons - revealed on hover, hidden by default to keep the day cell compact */}
+                    <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 bg-white/90 rounded px-0.5 -mr-0.5">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setViewBooking(b); }}
+                        className="p-0.5 rounded text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                        title="View"
+                      >
+                        <Eye className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(b); }}
+                        className="p-0.5 rounded text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setItemToDelete(b._id); }}
+                        className="p-0.5 rounded text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -357,6 +424,86 @@ export default function Rooms() {
         cancelText="Cancel"
         isDestructive={true}
       />
+
+      {/* View Modal - Read action of C.R.U.D */}
+      {viewBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-zinc-100 flex items-start justify-between shrink-0">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-900">{viewBooking.programName}</h3>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {viewBooking.roomType} · {format(new Date(viewBooking.date), 'MMMM d, yyyy')}
+                </p>
+              </div>
+              <button
+                onClick={() => setViewBooking(null)}
+                className="p-2 text-zinc-400 hover:text-zinc-600 rounded-lg hover:bg-zinc-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border
+                  ${viewBooking.status === 'Completed' ? 'bg-zinc-100 text-zinc-600 border-zinc-200' :
+                    viewBooking.status === 'Occupied' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    viewBooking.status === 'Cancelled' ? 'bg-red-50 text-red-600 border-red-200' :
+                    'bg-blue-50 text-blue-700 border-blue-200'}
+                `}>
+                  {viewBooking.status}
+                </span>
+                <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border
+                  ${viewBooking.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    viewBooking.paymentStatus === 'Partially Paid' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-rose-50 text-rose-700 border-rose-200'}
+                `}>
+                  {viewBooking.paymentStatus === 'Paid' && <CheckCircle className="w-3 h-3 mr-1" />}
+                  {viewBooking.paymentStatus}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                <InfoRow label="Organizer" value={viewBooking.organizer} />
+                <InfoRow label="Presenter" value={viewBooking.presenter} />
+                <InfoRow label="Event Type" value={viewBooking.eventType} />
+                <InfoRow label="Category" value={viewBooking.category} />
+                <InfoRow label="Participants" value={viewBooking.participants} />
+                <InfoRow label="Amount Due" value={`${viewBooking.amountDue ?? viewBooking.rate ?? 0} GHS`} />
+                <InfoRow label="Beneficiaries" value={viewBooking.beneficiaries} />
+                <InfoRow label="Room" value={viewBooking.roomType} />
+                <InfoRow label="Start Date" value={format(new Date(viewBooking.startDate || viewBooking.date), 'MMM d, yyyy')} />
+                <InfoRow label="End Date" value={viewBooking.endDate ? format(new Date(viewBooking.endDate), 'MMM d, yyyy') : '—'} />
+              </div>
+
+              {viewBooking.description && (
+                <div>
+                  <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1">Description</div>
+                  <p className="text-sm text-zinc-700 whitespace-pre-wrap">{viewBooking.description}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-end gap-3 shrink-0">
+              <button
+                onClick={() => { setItemToDelete(viewBooking._id); setViewBooking(null); }}
+                className="px-4 py-2 text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+              <button
+                onClick={() => { const b = viewBooking; setViewBooking(null); handleEdit(b); }}
+                className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium flex items-center gap-2"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -462,7 +609,7 @@ export default function Rooms() {
                 <label className="block text-sm font-medium text-zinc-700 mb-1">Room</label>
                 <select 
                   name="room" 
-                  value={formData.room} 
+                  value={formData.roomType} 
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
                 >
@@ -567,19 +714,17 @@ export default function Rooms() {
               </div>
 
               <div className="md:col-span-2 lg:col-span-3">
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Beneficiaries (Multi-select)</label>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Beneficiaries</label>
                 <select 
                   name="beneficiaries" 
-                  multiple
                   required
                   value={formData.beneficiaries} 
-                  onChange={handleBeneficiariesChange}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white min-h-[100px]"
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
                 >
                   {BENEFICIARIES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <p className="text-xs text-zinc-500 mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</p>
-                {errors.beneficiaries && <p className="text-xs text-red-500 mt-1">{errors.beneficiaries}</p>}
+                
               </div>
               
               <div className="md:col-span-2 lg:col-span-3">
@@ -593,11 +738,25 @@ export default function Rooms() {
                   placeholder="Optional details about the event..."
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">When does the event End</label>
+                <input 
+                  type="date" 
+                  name="endDate" 
+                  required
+                  value={formData.endDate} 
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                />
+                {errors.date && <p className="text-xs text-red-500 mt-1">{errors.date}</p>}
+              </div>
+
             </div>
             
             <div className="mt-6 flex items-center justify-between pt-6 border-t border-zinc-100">
               <div className="text-sm font-medium text-zinc-900">
-                Amount Due: <span className="text-emerald-600 ml-1">{ROOM_INVENTORY.find(r => r.name === formData.room)?.rate || 0} GHS</span>
+                Amount Due: <span className="text-emerald-600 ml-1">{ROOM_INVENTORY.find(r => r.name === formData.roomType)?.rate || 0} GHS</span>
               </div>
               <button 
                 type="submit" 
@@ -654,7 +813,7 @@ export default function Rooms() {
                         <div className="text-xs text-zinc-500">{booking.status}</div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="text-sm font-medium text-zinc-700">{booking.room}</div>
+                        <div className="text-sm font-medium text-zinc-700">{booking.roomType}</div>
                         <div className="text-xs text-zinc-500">{booking.rate} GHS</div>
                       </td>
                       <td className="py-3 px-4">
@@ -677,6 +836,13 @@ export default function Rooms() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setViewBooking(booking)}
+                            className="p-1 text-zinc-400 hover:text-zinc-900 transition-colors"
+                            title="View"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => handleEdit(booking)}
                             className="p-1 text-zinc-400 hover:text-zinc-900 transition-colors"

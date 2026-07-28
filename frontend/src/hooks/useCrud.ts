@@ -39,6 +39,10 @@ export function useCrud<T = any>({ endpoint, onSuccess, onError }: UseCrudOption
       setSubmitting(true);
       const targetEndpoint = customEndpoint || endpoint;
       const res = await api.post(targetEndpoint, payload);
+      if(res?.status == 'error'){
+        error(res?.message);
+        return res?.data;
+      }
       success('Record created successfully');
       onSuccess?.(res);
       await fetchAll();

@@ -42,3 +42,6 @@ router.get('/summary-patch', restrictTo('user', 'admin'), async(req, res)=>{
            });
     }
 });
+
+
+module.exports = router;

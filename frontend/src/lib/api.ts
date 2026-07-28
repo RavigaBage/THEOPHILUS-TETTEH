@@ -1,37 +1,39 @@
 
 const AUTH_ENDPOINTS = ["auth/refresh", "auth/verify", "auth/login"];
-const API_BASE_URL = import.meta.env.PUBLIC_API_SERVER_URL || "";
+const API_BASE_URL = import.meta.env.PUBLIC_API_SERVER_URL || "http://localhost:3001";
 
 let refreshPromise: Promise<boolean> | null = null;
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  console.log('accessToken')
 }
-
 export async function refreshAccessToken(): Promise<boolean> {
-  if (!refreshPromise) {
-    const url = API_BASE_URL ? `${API_BASE_URL}/api/auth/refresh` : `/api/auth/refresh`;
-    refreshPromise = fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) return false;
-        const data = await res.json();
-        setAccessToken(data.access);
-        return true;
-      })
-      .catch(() => false)
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
+    if (!refreshPromise) {
+        refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+        .then(async (res) => {
+            if (!res.ok) return false;
 
-  return refreshPromise;
+            const data = await res.json();
+
+            setAccessToken(data.access);
+
+            return true;
+        })
+        .catch(() => false)
+        .finally(() => {
+            refreshPromise = null;
+        });
+    }
+
+    return refreshPromise;
 }
 
 function redirectToLogin() {
@@ -45,10 +47,10 @@ async function request(
   options: RequestInit = {},
   isRetry = false
 ): Promise<any> {
-  const url = API_BASE_URL ? `${API_BASE_URL}/${endpoint}` : (endpoint.startsWith('/') ? endpoint : `/${endpoint}`);
-  const res = await fetch(url, {
+ 
+  const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
     ...options,
-    credentials: "include",
+        credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -66,18 +68,12 @@ async function request(
     redirectToLogin();
     throw new Error("Session expired");
   }
-
-  if (!res.ok) {
-    let errorMsg = `API Error (${res.status})`;
-    try {
-      const errorData = await res.json();
-      errorMsg = errorData.message || (Array.isArray(errorData.error) ? errorData.error[0]?.msg : null) || errorMsg;
-    } catch {
-      // json parse failed
-    }
-    throw new Error(errorMsg);
+  if(res.status === 400){
+    const errorData = await res.json();
+    console.log(errorData);
+    throw new Error(errorData.message || "Bad Request");
   }
-
+  if (!res.ok) throw new Error("API Error");
   return res.json();
 }
 
@@ -91,6 +87,10 @@ export const api = {
   download: async (endpoint: string, fallbackFilename = "IAC_Report.xlsx") => {
     const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
       credentials: "include",
+      headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    }
     });
     if (!res.ok) throw new Error("Failed to download file");
     

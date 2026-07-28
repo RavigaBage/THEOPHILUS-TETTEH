@@ -116,49 +116,82 @@ router.delete('/event-program/:id', restrictTo('user', 'admin'), async (req, res
     });
   }
 });
+function EventSpan(start, end) {
+    const d1 = new Date(start);
+    const d2 = new Date(end);
 
-router.post('/submit-event-program', restrictTo('user', 'admin'), async(req, res)=>{
-    try {
+    const utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+    const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
 
+    // Inclusive number of days
+    return Math.abs((utc2 - utc1) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function IncrementDate(date, num) {
+    const incrementDate = new Date(date);
+    incrementDate.setDate(incrementDate.getDate() + num);
+    return incrementDate;
+}
+
+router.post(
+    '/submit-event-program',
+    protect,
+    restrictTo('user', 'admin'),
+    async (req, res) => {
+        try {
             const normalizeDataSchema = {
-              name: req.body.name || "",
-              date: req.body.date || "",
-              organizer: req.body.organizer || "",
-              presenter: req.body.presenter || "",
-              programName:req.body.programName || "",
-
-              participants:req.body.participants || 0,
-
-              eventType: req.body.eventType || "workshop",
-
-              category:req.body.category || "programming",
-
-              beneficiaries:req.body.beneficiaries || "students",
-
-              description:req.body.description || "",
-
-              roomType:req.body.roomType || "conference",
-
-              roomNumber:req.body.roomNumber || "3",
+                name: req.body.presenter || "",
+                date: req.body.date || "",
+                startDate: req.body.date || "",
+                endDate: req.body.endDate || "",
+                organizer: req.body.organizer || "",
+                presenter: req.body.presenter || "",
+                programName: req.body.programName || "",
+                participants: req.body.participants || 0,
+                eventType: req.body.eventType || "workshop",
+                category: req.body.category || "programming",
+                beneficiaries: req.body.beneficiaries || "students",
+                description: req.body.description || "",
+                roomType: req.body.roomType || "conference",
+                roomNumber: req.body.roomNumber || "3",
             };
 
+            const totalSpan = EventSpan(
+                normalizeDataSchema.startDate,
+                normalizeDataSchema.endDate
+            );
 
-        const total = await BookingData.countDocuments();
-        const data = await BookingData.insertOne(normalizeDataSchema);
-        res.json({
-            status:'success',
-            message: 'Booking - users and admins see this',
-            data:data,
-        });
-    } catch (err) {
-         res.json({
-            status:'error',
-            message: err.message || 'An error occurred while fetching Booking data',
-            data:null,
-           });
-    } finally {
-        
+            const originalStartDate = normalizeDataSchema.startDate;
+            const bookings = [];
+
+            for (let i = 0; i < totalSpan; i++) {
+                const bookingDate = IncrementDate(originalStartDate, i);
+
+                bookings.push({
+                    ...normalizeDataSchema,
+                    startDate: bookingDate,
+                    date:bookingDate
+                });
+            }
+
+            const data = await BookingData.insertMany(bookings);
+
+            res.status(201).json({
+                status: "success",
+                message: `${data.length} booking(s) created successfully.`,
+                data,
+            });
+
+        } catch (err) {
+            res.status(500).json({
+                status: "error",
+                message:
+                    err.message ||
+                    "An error occurred while creating booking data.",
+                data: null,
+            });
+        }
     }
-});
+);
 
 module.exports = router

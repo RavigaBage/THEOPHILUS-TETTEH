@@ -25,7 +25,15 @@ interface Report {
   chartData: any;
   tableData: any;
 }
-
+const REPORT_TYPE = [
+   'internet_lounge',
+  'seminar_rooms',
+  'training_rooms',
+  'conference_rooms',
+  'center_overview',
+  'device_status',
+  'custom'
+]
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June', 
   'July', 'August', 'September', 'October', 'November', 'December'
@@ -52,6 +60,7 @@ export default function Reports() {
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedReportType, setReportType] = useState('center_overview');
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteTitle, setDeleteTitle] = useState('');
@@ -89,7 +98,7 @@ export default function Reports() {
   const handleGenerate = async () => {
     try {
       setIsGenerating(true);
-      await api.post('api/reports/generate/monthly', { month: selectedMonth, year: selectedYear });
+      await api.post('api/reports/generate/monthly', { month: selectedMonth, year: selectedYear,reportType:selectedReportType });
       success('Report generated successfully');
       setIsGenerateModalOpen(false);
       await fetchReports();
@@ -318,6 +327,7 @@ export default function Reports() {
                   ))}
                 </select>
               </div>
+            
               
               <div className="flex justify-end gap-3">
                 <button
@@ -386,9 +396,9 @@ export default function Reports() {
           onChange={e => setFilterType(e.target.value)}
           className="w-full sm:w-auto px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 text-sm bg-white"
         >
-          <option value="All">All Types</option>
-          <option value="monthly_summary">Monthly Summary</option>
-          <option value="custom">Custom Report</option>
+          {REPORT_TYPE.map((reportsType,index)=>(
+            <option key={index} value={reportsType}>{reportsType}</option>
+          ))}
         </select>
       </div>
 
