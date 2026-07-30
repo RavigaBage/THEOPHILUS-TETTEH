@@ -695,23 +695,72 @@ router.post('/booking-requests', async (req, res) => {
       roomNumber,
       roomType,
       requestedDate,
+      arrivalTime,
       requestedSlot,
       programName,
       description,
     } = req.body;
 
-    if (!mobileUserId || !contactEmail || !requestedDate || !requestedSlot) {
-      return res.status(400).json({ error: 'Missing required booking fields' });
+    const timeOfArrival = arrivalTime || requestedSlot;
+    if (!mobileUserId || !contactEmail || !requestedDate || !timeOfArrival) {
+      return res.status(400).json({ error: 'Missing required booking fields (Date and Time of Arrival required)' });
+    }
+
+    const reqDate = new Date(requestedDate);
+    if (isNaN(reqDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid booking date format' });
+    }
+
+    const startOfDay = new Date(reqDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(reqDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const roomNumStr = String(roomNumber || '3');
+
+    // Guard 1: Check for existing pending or confirmed mobile booking request for the same room, date, and arrival time/slot
+    const mobileConflict = await MobileBookingRequest.findOne({
+      roomNumber: roomNumStr,
+      requestedDate: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ['pending', 'confirmed'] },
+      $or: [
+        { arrivalTime: timeOfArrival },
+        { requestedSlot: timeOfArrival }
+      ]
+    });
+
+    if (mobileConflict) {
+      return res.status(409).json({
+        error: `Booking Conflict: Room ${roomNumStr} already has a ${mobileConflict.status} reservation on ${reqDate.toISOString().split('T')[0]} at ${timeOfArrival}. Please choose another time or room.`
+      });
+    }
+
+    // Guard 2: Check for existing booking in the primary Booking system
+    const dateFormatted = reqDate.toISOString().split('T')[0];
+    const systemConflict = await Booking.findOne({
+      $or: [
+        { roomNumber: Number(roomNumStr) },
+        { roomNumber: roomNumStr }
+      ],
+      date: dateFormatted,
+      $or: [{ timeSlot: timeOfArrival }, { timeSlots: timeOfArrival }]
+    });
+
+    if (systemConflict) {
+      return res.status(409).json({
+        error: `Booking Conflict: Room ${roomNumStr} is already reserved in the facility schedule for ${dateFormatted} at ${timeOfArrival}.`
+      });
     }
 
     const request = new MobileBookingRequest({
       mobileUserId,
       mobileUserName: mobileUserName || 'Mobile User',
       contactEmail,
-      roomNumber: roomNumber || '3',
+      roomNumber: roomNumStr,
       roomType: roomType || 'conference',
       requestedDate: new Date(requestedDate),
-      requestedSlot,
+      arrivalTime: timeOfArrival,
+      requestedSlot: timeOfArrival,
       programName: programName || 'IAC Mobile Reservation',
       description: description || '',
       status: 'pending',
@@ -737,12 +786,40 @@ router.post('/booking-requests/:id/confirm', async (req, res) => {
     }
 
     const dateFormatted = new Date(request.requestedDate).toISOString().split('T')[0];
+    const reqDate = new Date(request.requestedDate);
+    const startOfDay = new Date(reqDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(reqDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const timeVal = request.arrivalTime || request.requestedSlot;
+
+    // Check if another request was already confirmed for this room and time
+    const existingConfirmed = await MobileBookingRequest.findOne({
+      _id: { $ne: request._id },
+      roomNumber: String(request.roomNumber),
+      requestedDate: { $gte: startOfDay, $lte: endOfDay },
+      status: 'confirmed',
+      $or: [
+        { arrivalTime: timeVal },
+        { requestedSlot: timeVal }
+      ]
+    });
+
+    if (existingConfirmed) {
+      return res.status(409).json({
+        error: `Slot Conflict: Room ${request.roomNumber} already has a confirmed booking for ${dateFormatted} at ${timeVal}.`
+      });
+    }
 
     // Conflict check in existing production Booking model
     const conflict = await Booking.findOne({
-      roomNumber: String(request.roomNumber),
+      $or: [
+        { roomNumber: Number(request.roomNumber) },
+        { roomNumber: String(request.roomNumber) }
+      ],
       date: dateFormatted,
-      $or: [{ timeSlot: request.requestedSlot }, { timeSlots: request.requestedSlot }],
+      $or: [{ timeSlot: timeVal }, { timeSlots: timeVal }],
     });
 
     if (conflict) {

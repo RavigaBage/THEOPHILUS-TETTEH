@@ -8,6 +8,7 @@ const mobileBookingRequestSchema = new mongoose.Schema(
     roomNumber: { type: String, default: '3' },
     roomType: { type: String, default: 'conference' },
     requestedDate: { type: Date, required: true },
+    arrivalTime: { type: String, default: '' },
     requestedSlot: { type: String, required: true },
     programName: { type: String, default: 'IAC Mobile Reservation' },
     description: { type: String, default: '' },
