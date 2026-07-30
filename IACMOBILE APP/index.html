@@ -207,6 +207,18 @@
       <div class="datepill" id="today">Tue, Jul 28</div>
     </div>
 
+    <!-- USER ACCOUNT IDENTITY BADGE -->
+    <div class="user-badge" style="display:flex; justify-content:space-between; align-items:center; background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:8px 12px; margin:0 20px 14px;">
+      <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+        <div style="width:28px; height:28px; border-radius:50%; background:var(--signal); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11px; color:#04342C;" id="userInitials">ME</div>
+        <div style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          <span style="font-weight:700; color:var(--ticket); display:block;" id="userNameDisplay">Mobile Member</span>
+          <span style="color:var(--graphite); font-size:10px; font-family:'IBM Plex Mono',monospace;" id="userEmailDisplay">user@example.com</span>
+        </div>
+      </div>
+      <button onclick="handleLogout()" style="background:transparent; border:1px solid #3A5246; color:var(--marigold); font-family:'IBM Plex Mono',monospace; font-size:10px; padding:5px 10px; border-radius:8px; cursor:pointer; font-weight:600;">Sign Out</button>
+    </div>
+
     <div class="content">
 
       <!-- HOME -->
@@ -333,19 +345,10 @@
 </div>
 
 <script>
-// ---- API base: point this at your local dashboard's backend if the app is served ----
-// ---- from somewhere other than the backend origin itself (e.g. a static server). ----
-// Same-origin (default): leave as ''  ·  Different host: e.g. 'http://localhost:5000'
-const API_BASE = '';
-
-let mobileUserId = localStorage.getItem('iac_mobile_user_id');
-if (!mobileUserId) {
-  mobileUserId = 'mob_user_' + Math.floor(100000 + Math.random() * 900000);
-  localStorage.setItem('iac_mobile_user_id', mobileUserId);
-}
-
-let mobileUserName = localStorage.getItem('iac_mobile_user_name') || 'Alex Johnson';
-let mobileUserEmail = localStorage.getItem('iac_mobile_user_email') || 'alex.johnson@example.com';
+// Global user identity & system state
+let mobileUserId = localStorage.getItem('iac_mobile_user_id') || '';
+let mobileUserName = localStorage.getItem('iac_mobile_user_name') || 'Mobile Member';
+let mobileUserEmail = localStorage.getItem('iac_mobile_user_email') || '';
 
 let streak = 0;
 let currentTicketId = null;
@@ -360,6 +363,127 @@ function showToast(msg) {
   setTimeout(() => { toast.style.display = 'none'; }, 4000);
 }
 
+// AUTHENTICATED FETCH WRAPPER
+function getAuthHeader() {
+  const token = localStorage.getItem('iac_mobile_access_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+async function authFetch(url, options = {}) {
+  options.headers = {
+    ...options.headers,
+    ...getAuthHeader(),
+  };
+  let res = await fetch(url, options);
+
+  if (res.status === 401) {
+    const refreshToken = localStorage.getItem('iac_mobile_refresh_token');
+    if (refreshToken) {
+      try {
+        const refreshRes = await fetch('/api/iac-mobile/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          localStorage.setItem('iac_mobile_access_token', refreshData.accessToken);
+          options.headers['Authorization'] = `Bearer ${refreshData.accessToken}`;
+          res = await fetch(url, options);
+        } else {
+          handleLogout();
+        }
+      } catch (err) {
+        handleLogout();
+      }
+    } else {
+      handleLogout();
+    }
+  }
+  return res;
+}
+
+async function checkAuthAndInit() {
+  const token = localStorage.getItem('iac_mobile_access_token');
+  if (!token) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/iac-mobile/auth/verify', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!res.ok) {
+      const refreshToken = localStorage.getItem('iac_mobile_refresh_token');
+      if (refreshToken) {
+        const refRes = await fetch('/api/iac-mobile/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        if (refRes.ok) {
+          const refData = await refRes.json();
+          localStorage.setItem('iac_mobile_access_token', refData.accessToken);
+        } else {
+          window.location.href = 'login.html';
+          return;
+        }
+      } else {
+        window.location.href = 'login.html';
+        return;
+      }
+    } else {
+      const data = await res.json();
+      if (data.user) {
+        mobileUserId = data.user.mobileUserId;
+        mobileUserName = data.user.name;
+        mobileUserEmail = data.user.email;
+        localStorage.setItem('iac_mobile_user_id', mobileUserId);
+        localStorage.setItem('iac_mobile_user_name', mobileUserName);
+        localStorage.setItem('iac_mobile_user_email', mobileUserEmail);
+      }
+    }
+  } catch (e) {
+    console.warn('Auth verify check error:', e);
+  }
+
+  updateUserBadge();
+  fetchUserProfile();
+  loadAnnouncements();
+  loadLeaderboard('lbPreview', 3);
+  loadIssues();
+}
+
+function updateUserBadge() {
+  const nameEl = document.getElementById('userNameDisplay');
+  const emailEl = document.getElementById('userEmailDisplay');
+  const initialsEl = document.getElementById('userInitials');
+  if (nameEl) nameEl.textContent = mobileUserName;
+  if (emailEl) emailEl.textContent = mobileUserEmail;
+  if (initialsEl) {
+    const initials = mobileUserName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'ME';
+    initialsEl.textContent = initials;
+  }
+}
+
+async function handleLogout() {
+  const token = localStorage.getItem('iac_mobile_access_token');
+  if (token) {
+    try {
+      await fetch('/api/iac-mobile/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch(e) {}
+  }
+  localStorage.removeItem('iac_mobile_access_token');
+  localStorage.removeItem('iac_mobile_refresh_token');
+  window.location.href = 'login.html';
+}
+
+// Today's date pill
 const now = new Date();
 document.getElementById('today').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 document.getElementById('bookingDateInput').value = now.toISOString().split('T')[0];
@@ -376,8 +500,9 @@ function renderHoles(){
 }
 
 async function fetchUserProfile() {
+  if (!mobileUserId) return;
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/user-profile/${mobileUserId}`);
+    const res = await authFetch(`/api/iac-mobile/user-profile/${mobileUserId}`);
     if (res.ok) {
       const data = await res.json();
       streak = data.streak || 0;
@@ -392,7 +517,7 @@ const sliderState = {};
 
 async function loadAnnouncements() {
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/announcements`);
+    const res = await authFetch('/api/iac-mobile/announcements');
     if (res.ok) {
       liveAnnouncements = await res.json();
     }
@@ -502,7 +627,7 @@ async function loadLeaderboard(target, limit) {
 
 async function loadIssues(){
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/issues?mobileUserId=${mobileUserId}`);
+    const res = await authFetch(`/api/iac-mobile/issues?mobileUserId=${mobileUserId}`);
     if (res.ok) {
       liveIssues = await res.json();
     }
@@ -544,7 +669,7 @@ async function loadIssues(){
 
 async function voteIssue(id, direction) {
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/issues/${id}/vote`, {
+    const res = await authFetch(`/api/iac-mobile/issues/${id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobileUserId, direction })
@@ -560,7 +685,7 @@ async function voteIssue(id, direction) {
 
 async function flagPreset(text, category) {
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/issues`, {
+    const res = await authFetch('/api/iac-mobile/issues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -612,7 +737,7 @@ async function startCheckin(){
   btn.textContent = 'Generating...';
 
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/checkin-tickets`, {
+    const res = await authFetch('/api/iac-mobile/checkin-tickets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobileUserId, mobileUserName, mobileUserEmail })
@@ -649,7 +774,7 @@ async function startCheckin(){
 async function checkTicketStatus() {
   if (!currentTicketId) return;
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/checkin-tickets/${currentTicketId}`);
+    const res = await authFetch('/api/iac-mobile/checkin-tickets');
     if (res.ok) {
       const myTicket = await res.json();
 
@@ -732,7 +857,7 @@ async function confirmBooking(){
   const programVal = document.getElementById('bookingProgramInput').value.trim() || 'Room Reservation';
 
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/booking-requests`, {
+    const res = await authFetch('/api/iac-mobile/booking-requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -757,16 +882,8 @@ async function confirmBooking(){
   }
 }
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  });
-}
-
-fetchUserProfile();
-loadAnnouncements();
-loadLeaderboard('lbPreview', 3);
-loadIssues();
+// Init Page with Auth Verification Check
+checkAuthAndInit();
 </script>
 </body>
 </html>

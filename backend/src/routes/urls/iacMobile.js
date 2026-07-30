@@ -10,6 +10,182 @@ const SmtpConfig = require('../../models/SmtpConfig');
 const InternetLounge = require('../../models/InternetLounge');
 const Booking = require('../../models/booking');
 const { sendEmail, verifyAndSendTestEmail } = require('../../services/mailerService');
+const { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } = require('../../utils/jwt');
+
+// Middleware to verify mobile JWT token
+const verifyMobileToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No access token provided' });
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyAccessToken(token);
+    const profile = await MobileUserProfile.findById(decoded.id);
+    if (!profile) {
+      return res.status(401).json({ error: 'Mobile user does not exist' });
+    }
+    req.mobileUser = profile;
+    next();
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// -------------------------------------------------------------
+// 0. MOBILE USER AUTHENTICATION & CERTIFICATION
+// -------------------------------------------------------------
+
+// REGISTER
+router.post('/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await MobileUserProfile.findOne({ email: normalizedEmail });
+    if (existing) {
+      return res.status(400).json({ error: 'An account with this email already exists' });
+    }
+
+    const mobileUserId = 'mob_user_' + Math.floor(100000 + Math.random() * 900000);
+    const profile = new MobileUserProfile({
+      mobileUserId,
+      name: name.trim(),
+      email: normalizedEmail,
+      password,
+    });
+
+    await profile.save();
+
+    const accessToken = signAccessToken(profile._id);
+    const refreshToken = signRefreshToken(profile._id);
+
+    profile.refreshToken = refreshToken;
+    await profile.save({ validateBeforeSave: false });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Mobile user registered successfully',
+      accessToken,
+      refreshToken,
+      user: {
+        id: profile._id,
+        mobileUserId: profile.mobileUserId,
+        name: profile.name,
+        email: profile.email,
+        streak: profile.streak,
+        totalCheckins: profile.totalCheckins,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// LOGIN
+router.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const profile = await MobileUserProfile.findOne({ email: normalizedEmail }).select('+password');
+    if (!profile) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const isMatch = await profile.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const accessToken = signAccessToken(profile._id);
+    const refreshToken = signRefreshToken(profile._id);
+
+    profile.refreshToken = refreshToken;
+    await profile.save({ validateBeforeSave: false });
+
+    res.json({
+      status: 'success',
+      message: 'Logged in successfully',
+      accessToken,
+      refreshToken,
+      user: {
+        id: profile._id,
+        mobileUserId: profile.mobileUserId,
+        name: profile.name,
+        email: profile.email,
+        streak: profile.streak,
+        totalCheckins: profile.totalCheckins,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// VERIFY CURRENT TOKEN
+router.get('/auth/verify', verifyMobileToken, async (req, res) => {
+  const profile = req.mobileUser;
+  res.json({
+    status: 'success',
+    user: {
+      id: profile._id,
+      mobileUserId: profile.mobileUserId,
+      name: profile.name,
+      email: profile.email,
+      streak: profile.streak,
+      totalCheckins: profile.totalCheckins,
+    },
+  });
+});
+
+// REFRESH TOKEN
+router.post('/auth/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'No refresh token provided' });
+    }
+
+    const decoded = verifyRefreshToken(refreshToken);
+    const profile = await MobileUserProfile.findById(decoded.id).select('+refreshToken');
+    if (!profile || profile.refreshToken !== refreshToken) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    const newAccessToken = signAccessToken(profile._id);
+    res.json({
+      status: 'success',
+      accessToken: newAccessToken,
+    });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid or expired refresh token' });
+  }
+});
+
+// LOGOUT
+router.post('/auth/logout', verifyMobileToken, async (req, res) => {
+  try {
+    const profile = req.mobileUser;
+    profile.refreshToken = undefined;
+    await profile.save({ validateBeforeSave: false });
+    res.json({ status: 'success', message: 'Logged out successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // -------------------------------------------------------------
 // 1. CHECK-IN TICKETS
