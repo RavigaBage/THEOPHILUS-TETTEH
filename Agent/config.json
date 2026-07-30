@@ -1,0 +1,21 @@
+{
+  "serverUrl": "...",
+  "deviceId": "...",
+  "deviceName": "My Workstation",
+  "agentVersion": "1.0.0",
+  "department": "Engineering",
+  "location": "Accra HQ",
+  "assignedUser": "john.doe",
+  "serialNumber": "SN-12345",
+  "remotePort": 8080,
+  "authenticationMode": "token",
+  "encryptionEnabled": true,
+  "reconnectInterval": 3000,
+  "permissions": {
+    "allowRemoteShutdown": true,
+    "allowRemoteRestart": true,
+    "allowRemoteLock": true,
+    "allowRemoteMonitoring": true,
+    "allowFileTransfer": false
+  }
+}
