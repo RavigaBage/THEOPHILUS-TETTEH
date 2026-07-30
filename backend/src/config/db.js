@@ -1,24 +1,50 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const User = require('../models/User');
 
 let mongoServer;
 
-const connectDB = async () => {
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Iac_db';
+const seedInitialData = async () => {
   try {
-    await mongoose.connect(uri, {
+    const adminExists = await User.findOne({ email: 'admin@iac.com' });
+
+    if (!adminExists) {
+      await User.create({
+        name: 'Administrator',
+        email: 'admin@iac.com',
+        password: 'Admin@1234',
+        role: 'admin',
+      });
+
+      console.log('✅ Default admin user created (admin@iac.com)');
+    }
+  } catch (err) {
+    console.error('❌ Error seeding default admin:', err.message);
+  }
+};
+
+const connectDB = async () => {
+  const uri = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/Iac_db';
+
+  try {
+    const conn = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 2000,
     });
-    console.log(`✅ Connected to MongoDB at ${uri}`);
+
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+
+    await seedInitialData();
   } catch (err) {
-    console.log(`ℹ️ Local MongoDB not found. Starting MongoMemoryServer...`);
+    console.log(`ℹ️ Local MongoDB not found (${err.message}). Starting MongoMemoryServer...`);
     try {
       mongoServer = await MongoMemoryServer.create();
       const memoryUri = mongoServer.getUri();
-      await mongoose.connect(memoryUri);
-      console.log(`✅ Connected to MongoMemoryServer at ${memoryUri}`);
+      const conn = await mongoose.connect(memoryUri);
+      console.log(`✅ MongoDB Memory Server connected at: ${memoryUri}`);
+      await seedInitialData();
     } catch (memErr) {
-      console.error('Failed to start MongoMemoryServer:', memErr.message);
+      console.error('❌ Failed to start MongoMemoryServer:', memErr.message);
+      process.exit(1);
     }
   }
 };

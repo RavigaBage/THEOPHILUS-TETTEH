@@ -1,23 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Coffee, Plus, Check, X, Search, RefreshCw } from 'lucide-react';
-import api from '../lib/api';
-import { useToast } from '../contexts/ToastContext';
+import { Coffee, Plus, Save, Clock, X, User, Edit2, Trash2 } from 'lucide-react';
+import { useCrud } from "../hooks/useCrud";
+import { useFuzzySearch } from '../hooks/useFuzzySearch';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Pagination } from '../components/ui/Pagination';
 
-interface PendingTicket {
-  _id: string;
-  ticketCode: string;
-  status: string;
-  requestedAt: string;
-  user: {
-    id: string;
-    name: string;
-    displayName: string;
-    email: string;
-    currentStreak: number;
-  };
-}
-
-interface LoungeLog {
+interface LoungeUser {
   _id: string;
   name: string;
   identifier: string;
@@ -26,332 +14,434 @@ interface LoungeLog {
   gender: string;
   timeIn: string;
   timeOut?: string;
+  Signature: string;
 }
 
 export default function Lounge() {
-  const { showToast } = useToast();
-  const [pendingQueue, setPendingQueue] = useState<PendingTicket[]>([]);
-  const [queueLoading, setQueueLoading] = useState(false);
+  const {
+    data: users,
+    loading,
+    submitting,
+    fetchAll: fetchUsers,
+    createRecord,
+    updateRecord,
+    deleteRecord,
+    pages: pageNumber,
+  } = useCrud<LoungeUser>({ endpoint: 'api/users/lounge-data' });
 
-  const [loungeLogs, setLoungeLogs] = useState<LoungeLog[]>([]);
-  const [search, setSearch] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  // Manual Check-in Form Modal
-  const [showForm, setShowForm] = useState(false);
+  const totalPages = pageNumber;
+
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const fuzzyFilteredUsers = useFuzzySearch<LoungeUser>(users || [], searchQuery, {
+    keys: ['name', 'identifier', 'Signature']
+  });
+  
+ 
+
+  // Form State
   const [formData, setFormData] = useState({
     full_name: '',
     user_id: '',
     user_id_type: 'ghana_card',
     contact: '',
     gender: 'male',
-    user_time_in: new Date().toISOString().slice(0, 16),
+    user_time_in: '',
+    user_time_out: ''
   });
 
-  const fetchPendingQueue = async () => {
-    setQueueLoading(true);
-    try {
-      const res = await api.get('/api/staff/checkins/pending');
-      setPendingQueue(res.data);
-    } catch (err) {
-      console.error('Pending queue fetch error:', err);
-    } finally {
-      setQueueLoading(false);
-    }
+useEffect(() => {
+  fetchUsers({ page: currentPage, limit: 20 });
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  setFormData((prev) => ({ ...prev, user_time_in: now.toISOString().slice(0, 16) }));
+}, [currentPage, fetchUsers]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const fetchLoungeLogs = async () => {
-    try {
-      const res = await api.get('/api/users/lounge-data');
-      if (res.data.data) setLoungeLogs(res.data.data);
-      else if (Array.isArray(res.data)) setLoungeLogs(res.data);
-    } catch (err) {
-      console.error('Lounge logs fetch error:', err);
-    }
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.full_name.trim()) newErrors.full_name = 'Full Name is required';
+    if (!formData.user_id.trim()) newErrors.user_id = 'ID Number is required';
+    if (!formData.contact.trim()) newErrors.contact = 'Contact Number is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  useEffect(() => {
-    fetchPendingQueue();
-    fetchLoungeLogs();
-    const interval = setInterval(fetchPendingQueue, 8000); // Live poll queue
-    return () => clearInterval(interval);
-  }, []);
-
-  const confirmTicket = async (id: string, ticketCode: string) => {
-    try {
-      const res = await api.post(`/api/staff/checkins/${id}/confirm`);
-      showToast(`Confirmed ticket ${ticketCode}! Visitor streak is now ${res.data.updatedStreak} days.`, 'success');
-      fetchPendingQueue();
-      fetchLoungeLogs();
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to confirm ticket', 'error');
-    }
-  };
-
-  const rejectTicket = async (id: string, ticketCode: string) => {
-    try {
-      await api.post(`/api/staff/checkins/${id}/reject`);
-      showToast(`Rejected ticket ${ticketCode}`, 'info');
-      fetchPendingQueue();
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to reject ticket', 'error');
-    }
-  };
-
-  const handleCreateLoungeEntry = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     try {
-      await api.post('/api/users/lounge-data', formData);
-      showToast('Lounge check-in record saved', 'success');
-      setShowForm(false);
+      if (editingId) {
+        await updateRecord(editingId, formData);
+      } else {
+        await createRecord(formData, 'api/users/submit-lounge-data');
+      }
+      setIsFormOpen(false);
+      setEditingId(null);
+      setErrors({});
+      // Reset form
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       setFormData({
         full_name: '',
         user_id: '',
         user_id_type: 'ghana_card',
         contact: '',
         gender: 'male',
-        user_time_in: new Date().toISOString().slice(0, 16),
+        user_time_in: now.toISOString().slice(0, 16),
+        user_time_out: ''
       });
-      fetchLoungeLogs();
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Error saving lounge log', 'error');
+    } catch {
+      // Error is handled in useCrud
     }
   };
 
-  const filteredLogs = loungeLogs.filter(
-    (l) =>
-      l.name?.toLowerCase().includes(search.toLowerCase()) ||
-      l.identifier?.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleEdit = (user: LoungeUser) => {
+    setFormData({
+      full_name: user.name || user.Signature,
+      user_id: user.identifier,
+      user_id_type: user.identifierType || 'ghana_card',
+      contact: user.contactNumber,
+      gender: user.gender || 'male',
+      user_time_in: user.timeIn ? user.timeIn:"",
+      user_time_out: user.timeOut ? user.timeOut:"" 
+    });
+    setEditingId(user._id);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    try {
+      await deleteRecord(itemToDelete, 'api/users/lounge');
+    } catch {
+      // Error is handled in useCrud
+    } finally {
+      setItemToDelete(null);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsFormOpen(false);
+    setEditingId(null);
+    setErrors({});
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    setFormData({
+      full_name: '',
+      user_id: '',
+      user_id_type: 'ghana_card',
+      contact: '',
+      gender: 'male',
+      user_time_in: now.toISOString().slice(0, 16),
+      user_time_out: ''
+    });
+  };
+
+  const formatTimeColor = (timeVal: string): string => {
+
+    const hour = Number(
+      (timeVal.includes("T") ? timeVal.split("T")[1] : timeVal).split(":")[0]
+    );
+
+    if (hour < 12) {
+      return "morn";
+    } else {
+      return "even";
+    }
+  };
+
+  const formatIdType = (type: string) => {
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <Coffee className="w-6 h-6 text-amber-400" />
-            Internet Lounge Management
-          </h1>
-          <p className="text-xs text-slate-400 mt-0.5">Live check-in ticket verification queue & staff visitor logs.</p>
+    <div className="p-8 max-w-7xl mx-auto transition-opacity duration-500 ease-in-out opacity-100">
+      <ConfirmModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Record"
+        message="Are you sure you want to delete this record? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+      />
+      
+      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white rounded-xl border border-zinc-200/60 shadow-sm">
+            <Coffee className="w-6 h-6 text-zinc-900" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Internet Lounge</h1>
+            <p className="text-zinc-500 text-sm mt-1">Manage internet access tokens and active users.</p>
+          </div>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-md transition"
+        
+        <button 
+          onClick={() => {
+            if (isFormOpen) {
+              handleCancel();
+            } else {
+              setIsFormOpen(true);
+            }
+          }}
+          className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium flex items-center gap-2 self-start md:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          <span>Manual Check-in Entry</span>
+          {isFormOpen ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {isFormOpen ? 'Cancel' : 'Add User'}
         </button>
-      </div>
-
-      {/* SECTION 1: LIVE PENDING CHECK-IN TICKET QUEUE */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-        <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-            <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wide font-mono">
-              Live Pending Desk Queue ({pendingQueue.length})
+      </header>
+      
+      {isFormOpen && (
+        <div className="mb-8 bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-zinc-100 bg-zinc-50/50">
+            <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
+              <User className="w-5 h-5 text-zinc-400" />
+              {editingId ? 'Edit User Record' : 'Register New User'}
             </h2>
           </div>
-          <button
-            onClick={fetchPendingQueue}
-            disabled={queueLoading}
-            className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-lg"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${queueLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-        </div>
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Full Name (Signature)</label>
+                <input 
+                  type="text" 
+                  name="full_name" 
+                  required
+                  value={formData.full_name} 
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                  placeholder="e.g. John Doe"
+                />
+                {errors.full_name && <p className="text-xs text-red-500 mt-1">{errors.full_name}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Contact Number</label>
+                <input 
+                  type="text" 
+                  name="contact" 
+                  required
+                  value={formData.contact} 
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                  placeholder="e.g. 0501234567"
+                />
+                {errors.contact && <p className="text-xs text-red-500 mt-1">{errors.contact}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">ID Type</label>
+                <select 
+                  name="user_id_type" 
+                  value={formData.user_id_type} 
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
+                >
+                  <option value="ghana_card">Ghana Card</option>
+                  <option value="student_id">Student ID</option>
+                  <option value="passport">Passport</option>
+                  <option value="driver_license">Driver License</option>
+                  <option value="voter_id">Voter ID</option>
+                  <option value="nhis_card">NHIS Card</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">ID Number</label>
+                <input 
+                  type="text" 
+                  name="user_id" 
+                  required
+                  value={formData.user_id} 
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                  placeholder="ID Number"
+                />
+                {errors.user_id && <p className="text-xs text-red-500 mt-1">{errors.user_id}</p>}
+              </div>
 
-        {pendingQueue.length === 0 ? (
-          <div className="py-8 text-center text-slate-500 text-xs">
-            No pending visitor check-in tickets at desk right now.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-            {pendingQueue.map((item) => (
-              <div
-                key={item._id}
-                className="p-4 rounded-xl bg-slate-800/80 border border-amber-500/30 flex flex-col justify-between space-y-3"
-              >
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Gender</label>
+                <select 
+                  name="gender" 
+                  value={formData.gender} 
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="flex justify-between items-start">
-                    <span className="font-mono text-base font-bold text-amber-400 tracking-wider">
-                      {item.ticketCode}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {new Date(item.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-sm font-semibold text-slate-100">{item.user.displayName}</p>
-                    <p className="text-xs text-slate-400">{item.user.email}</p>
-                  </div>
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 text-[11px] font-mono">
-                    <span>🔥 Current Streak:</span>
-                    <span className="font-bold">{item.user.currentStreak} days</span>
-                  </div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Time In</label>
+                  <input 
+                    type="datetime-local" 
+                    name="user_time_in" 
+                    required
+                    value={formData.user_time_in} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                  />
                 </div>
-
-                <div className="flex gap-2 pt-2 border-t border-slate-700/60">
-                  <button
-                    onClick={() => confirmTicket(item._id, item.ticketCode)}
-                    className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Confirm</span>
-                  </button>
-                  <button
-                    onClick={() => rejectTicket(item._id, item.ticketCode)}
-                    className="px-3 py-1.5 bg-slate-700 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 rounded-lg text-xs font-medium transition"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Time Out (Optional)</label>
+                  <input 
+                    type="datetime-local" 
+                    name="user_time_out" 
+                    value={formData.user_time_out} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+            
+            <div className="mt-6 flex justify-end pt-6 border-t border-zinc-100">
+              <button 
+                type="submit" 
+                disabled={submitting}
+                className="px-6 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+              >
+                {submitting ? 'Saving...' : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Record
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="mb-6 flex items-center bg-white p-4 rounded-2xl border border-zinc-200/60 shadow-sm">
+        <div className="flex-1 relative w-full">
+          <input 
+            type="text" 
+            placeholder="Search users by name, ID or signature..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 text-sm"
+          />
+        </div>
       </div>
 
-      {/* SECTION 2: STAFF LOUNGE ENTRY LOGS TABLE */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4">
-          <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wide font-mono">
-            Staff Lounge Visitor Logs
-          </h2>
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search visitor logs..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-        </div>
-
+      <div className="bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-800/80 text-slate-400 uppercase font-mono text-[10px]">
-              <tr>
-                <th className="p-3">Visitor Name</th>
-                <th className="p-3">ID Number</th>
-                <th className="p-3">ID Type</th>
-                <th className="p-3">Contact</th>
-                <th className="p-3">Time In</th>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-zinc-50/50 border-b border-zinc-200/60">
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">User</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Contact</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Identification</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Time In</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
-              {filteredLogs.length === 0 ? (
+            <tbody className="divide-y divide-zinc-200/60">
+              {loading ? (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-slate-500">
-                    No lounge log records found.
+                  <td colSpan={6} className="py-12 text-center text-zinc-500">
+                    <div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin mx-auto mb-3"></div>
+                    Loading records...
+                  </td>
+                </tr>
+              ) : fuzzyFilteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-zinc-500">
+                    <Coffee className="w-8 h-8 mx-auto mb-3 text-zinc-300" />
+                    No users found.
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => (
-                  <tr key={log._id} className="hover:bg-slate-800/40">
-                    <td className="p-3 font-semibold text-slate-100">{log.name}</td>
-                    <td className="p-3 font-mono">{log.identifier}</td>
-                    <td className="p-3 uppercase text-[10px] text-slate-400">{log.identifierType}</td>
-                    <td className="p-3">{log.contactNumber}</td>
-                    <td className="p-3 text-slate-400">{new Date(log.timeIn).toLocaleString()}</td>
-                  </tr>
-                ))
+                fuzzyFilteredUsers.map((user: LoungeUser) => {
+                  const isActive = !user.timeOut || user.timeOut === '';
+                  return (
+                    <tr key={user._id} className="hover:bg-zinc-50/50 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-zinc-900">{user.name}</div>
+                        <div className="text-xs text-zinc-500 capitalize">{user.gender}</div>
+                      </td>
+                      <td className="py-3 px-4 text-sm font-mono text-zinc-600">{user.contactNumber}</td>
+                      <td className="py-3 px-4">
+                        <div className="text-sm font-medium text-zinc-700">{user.identifier}</div>
+                        <div className="text-xs text-zinc-500">{formatIdType(user.identifierType)}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-sm text-zinc-600 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                          <p className={`md:font-bold ${formatTimeColor(user.timeIn) === 'morn' ? 'text-green-800' : 'text-red-500'}`}>
+                            {user.timeIn}
+                          </p>
+                        </div>
+                        <div className="text-xs text-zinc-400">
+                          {user.timeIn}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {isActive ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium  bg-emerald-600 text-white border border-zinc-200/50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-black"></span>
+                            Checked Out
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="p-1 text-zinc-400 hover:text-zinc-900 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setItemToDelete(user._id)}
+                            className="p-1 text-zinc-400 hover:text-red-600 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Manual Check-in Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-slate-100">Manual Lounge Entry</h3>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-200">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCreateLoungeEntry} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-400 mb-1">ID Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.user_id}
-                    onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">ID Type</label>
-                  <select
-                    value={formData.user_id_type}
-                    onChange={(e) => setFormData({ ...formData, user_id_type: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                  >
-                    <option value="ghana_card">Ghana Card</option>
-                    <option value="passport">Passport</option>
-                    <option value="student_id">Student ID</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-400 mb-1">Contact Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.contact}
-                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Gender</label>
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                </div>
-              </div>
-              <div className="pt-3 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold"
-                >
-                  Save Entry
-                </button>
-              </div>
-            </form>
+          <div className="px-6 bg-zinc-50/50 border-t border-zinc-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,376 +1,506 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Trash2, Image, ShieldCheck } from 'lucide-react';
-import api from '../lib/api';
+import { FileBarChart2, Loader2, Plus, Download, Eye, Trash2, AlertCircle, X, Search } from 'lucide-react';
+import { api } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Pagination } from '../components/ui/Pagination';
+import { format } from 'date-fns';
+import { useCrud } from '../hooks/useCrud';
+import { useFuzzySearch } from '../hooks/useFuzzySearch';
 
-interface Announcement {
+interface Report {
   _id: string;
   title: string;
-  body: string;
-  category: string;
-  imageUrl?: string;
-  sortOrder: number;
-}
-
-interface IssueItem {
-  _id: string;
-  category: string;
-  description: string;
-  status: string;
-  upvotes: number;
-  downvotes: number;
-  resolutionNotes?: string;
-  reporterId?: {
-    _id: string;
-    displayName: string;
-    email: string;
-    currentStreak: number;
+  reportType: string;
+  dateRange: {
+    from: string;
+    to: string;
   };
-}
-
-interface AuditLogItem {
-  _id: string;
-  action: string;
-  performedBy: string;
   createdAt: string;
+  generatedBy?: {
+    name: string;
+    email: string;
+  };
+  summary: any;
+  chartData: any;
+  tableData: any;
 }
+const REPORT_TYPE = [
+   'internet_lounge',
+  'seminar_rooms',
+  'training_rooms',
+  'conference_rooms',
+  'center_overview',
+  'device_status',
+  'custom'
+]
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June', 
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 export default function Reports() {
-  const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'announcements' | 'issues' | 'audit'>('announcements');
+  const {
+    data: reportsData,
+    loading,
+    fetchAll: fetchReports,
+    deleteRecord,
+  } = useCrud<any>({ endpoint: 'api/reports' });
+  
+  // Extract actual reports array from res.data.data
+  const reports: Report[] = reportsData?.data || reportsData || [];
 
-  // Announcements state
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [showAnnounceModal, setShowAnnounceModal] = useState(false);
-  const [announceForm, setAnnounceForm] = useState({
-    title: '',
-    body: '',
-    category: 'notice',
-    imageUrl: '',
-    sortOrder: 1,
+  const { success, error } = useToast();
+
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedReportType, setReportType] = useState('center_overview');
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteTitle, setDeleteTitle] = useState('');
+
+  const [viewReport, setViewReport] = useState<Report | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  const fuzzyFilteredReports = useFuzzySearch(reports, searchQuery, {
+    keys: ['title', 'reportType', 'generatedBy.name']
   });
 
-  // Issues state
-  const [issues, setIssues] = useState<IssueItem[]>([]);
-
-  // Audit state
-  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
-
-  const fetchAnnouncements = async () => {
-    try {
-      const res = await api.get('/api/staff/announcements');
-      setAnnouncements(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchIssues = async () => {
-    try {
-      const res = await api.get('/api/staff/issues');
-      setIssues(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchAuditLogs = async () => {
-    try {
-      const res = await api.get('/api/staff/audit-logs');
-      setAuditLogs(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const filteredReports = fuzzyFilteredReports.filter(r => {
+    if (filterType !== 'All' && r.reportType !== filterType) return false;
+    return true;
+  });
 
   useEffect(() => {
-    fetchAnnouncements();
-    fetchIssues();
-    fetchAuditLogs();
-  }, []);
+    setCurrentPage(1);
+  }, [searchQuery, filterType]);
 
-  const handleCreateAnnouncement = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE) || 1;
+  const paginatedReports = filteredReports.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  const handleGenerate = async () => {
     try {
-      await api.post('/api/staff/announcements', announceForm);
-      showToast('Announcement published to slider board', 'success');
-      setShowAnnounceModal(false);
-      setAnnounceForm({ title: '', body: '', category: 'notice', imageUrl: '', sortOrder: 1 });
-      fetchAnnouncements();
+      setIsGenerating(true);
+      await api.post('api/reports/generate/monthly', { month: selectedMonth, year: selectedYear,reportType:selectedReportType });
+      success('Report generated successfully');
+      setIsGenerateModalOpen(false);
+      await fetchReports();
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Error creating announcement', 'error');
+      error(err.message || 'Failed to generate report');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const handleDeleteAnnouncement = async (id: string) => {
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
-      await api.delete(`/api/staff/announcements/${id}`);
-      showToast('Announcement deleted', 'info');
-      fetchAnnouncements();
-    } catch (err: any) {
-      showToast('Failed to delete announcement', 'error');
+      await deleteRecord(deleteId, 'api/reports');
+    } catch {
+      // Error handled by useCrud
+    } finally {
+      setDeleteId(null);
     }
   };
 
-  const updateIssueStatus = async (id: string, status: string) => {
+
+  const handleDownload = async (report: Report, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
-      await api.patch(`/api/staff/issues/${id}`, { status });
-      showToast(`Issue status updated to ${status}`, 'success');
-      fetchIssues();
+      const safeTitle = (report.title || 'IAC_Report').replace(/[^a-zA-Z0-9_-]/g, '_');
+      await api.download(`api/reports/${report._id}/excel`, `${safeTitle}.xlsx`);
+      success('Excel report downloaded successfully');
     } catch (err: any) {
-      showToast('Failed to update issue', 'error');
+      error(err.message || 'Failed to download Excel report');
     }
   };
 
-  // Special missing-checkin resolution handler (manual backdated check-in & streak bump)
-  const resolveMissingCheckinDispute = async (id: string) => {
+  const handleExportCurrentMonthExcel = async () => {
     try {
-      const res = await api.post(`/api/staff/issues/${id}/resolve-missing-checkin`);
-      showToast(res.data.message || 'Backdated check-in granted & streak updated!', 'success');
-      fetchIssues();
+      await api.download(
+        `api/reports/export?month=${selectedMonth}&year=${selectedYear}`,
+        `IAC_Monthly_Report_${selectedMonth}_${selectedYear}.xlsx`
+      );
+      success('Monthly Excel report downloaded successfully');
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to resolve dispute', 'error');
+      error(err.message || 'Failed to export monthly Excel report');
     }
   };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  if (viewReport) {
+    return (
+      <div className="p-8 max-w-5xl mx-auto bg-white min-h-screen">
+        <div className="print:hidden mb-8 flex items-center justify-between">
+          <button 
+            onClick={() => setViewReport(null)}
+            className="px-4 py-2 bg-zinc-100 text-zinc-700 rounded-lg hover:bg-zinc-200 transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            <X className="w-4 h-4" />
+            Close
+          </button>
+          <button 
+            onClick={handlePrint}
+            className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Print / Export PDF
+          </button>
+        </div>
+
+        <div className="print:block">
+          <div className="text-center mb-10 border-b border-zinc-200 pb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{viewReport.title}</h1>
+            <p className="text-zinc-500 mt-2 text-sm">
+              Generated on {format(new Date(viewReport.createdAt), 'PPP')} by {viewReport.generatedBy?.name || 'System'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-center">
+              <div className="text-sm font-medium text-zinc-500 mb-1">Total Visitors</div>
+              <div className="text-2xl font-bold text-zinc-900">{viewReport.summary?.totalVisitors || 0}</div>
+            </div>
+            <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-center">
+              <div className="text-sm font-medium text-zinc-500 mb-1">Total Events</div>
+              <div className="text-2xl font-bold text-zinc-900">{viewReport.summary?.totalEvents || 0}</div>
+            </div>
+            <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-center">
+              <div className="text-sm font-medium text-zinc-500 mb-1">Total Participants</div>
+              <div className="text-2xl font-bold text-zinc-900">{viewReport.summary?.totalParticipants || 0}</div>
+            </div>
+            <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-center">
+              <div className="text-sm font-medium text-zinc-500 mb-1">Revenue Generated</div>
+              <div className="text-2xl font-bold text-emerald-600">${viewReport.summary?.totalRevenue || 0}</div>
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold text-zinc-900 mb-4 border-b border-zinc-200 pb-2">Room Utilization Breakdown</h3>
+          <div className="mb-10 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {viewReport.chartData?.roomUtilization?.map((ru: any) => (
+              <div key={ru.room} className="p-3 bg-white border border-zinc-200 rounded-lg flex justify-between items-center">
+                <span className="text-sm font-medium text-zinc-700">{ru.room}</span>
+                <span className="text-sm font-bold text-zinc-900">{ru.count} events</span>
+              </div>
+            ))}
+            {(!viewReport.chartData?.roomUtilization || viewReport.chartData.roomUtilization.length === 0) && (
+              <div className="text-sm text-zinc-500 col-span-full">No events recorded this month.</div>
+            )}
+          </div>
+
+          <h3 className="text-xl font-bold text-zinc-900 mb-4 border-b border-zinc-200 pb-2">Daily Event Details</h3>
+          <div className="mb-10 overflow-x-auto">
+            <table className="w-full text-left border-collapse border border-zinc-200">
+              <thead>
+                <tr className="bg-zinc-50 border-b border-zinc-200">
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Date</th>
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Room</th>
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Event Name</th>
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Organizer</th>
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Participants</th>
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Revenue</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200">
+                {viewReport.tableData?.events?.map((ev: any, idx: number) => (
+                  <tr key={idx} className="hover:bg-zinc-50/50">
+                    <td className="py-2 px-3 text-sm text-zinc-900">{format(new Date(ev.date), 'MMM d, yyyy')}</td>
+                    <td className="py-2 px-3 text-sm text-zinc-700">{ev.room}</td>
+                    <td className="py-2 px-3 text-sm text-zinc-700 font-medium">{ev.programName}</td>
+                    <td className="py-2 px-3 text-sm text-zinc-500">{ev.organizer}</td>
+                    <td className="py-2 px-3 text-sm text-zinc-500">{ev.participants}</td>
+                    <td className="py-2 px-3 text-sm text-zinc-500">
+                      ${ev.paymentStatus === 'Paid' ? ev.amountDue : (ev.paymentStatus === 'Partially Paid' ? ev.amountDue/2 : 0)}
+                    </td>
+                  </tr>
+                ))}
+                {(!viewReport.tableData?.events || viewReport.tableData.events.length === 0) && (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-zinc-500 text-sm">No events found for this period.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="text-xl font-bold text-zinc-900 mb-4 border-b border-zinc-200 pb-2">Daily Visitor Counts</h3>
+          <div className="mb-10 overflow-x-auto">
+            <table className="w-full text-left border-collapse border border-zinc-200">
+              <thead>
+                <tr className="bg-zinc-50 border-b border-zinc-200">
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Date</th>
+                  <th className="py-2 px-3 text-xs font-semibold text-zinc-500 uppercase">Total Visitors</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200">
+                {viewReport.chartData?.visitsByDay?.map((vd: any, idx: number) => (
+                  <tr key={idx} className="hover:bg-zinc-50/50">
+                    <td className="py-2 px-3 text-sm text-zinc-900">{vd._id}</td>
+                    <td className="py-2 px-3 text-sm text-zinc-700 font-medium">{vd.visitors}</td>
+                  </tr>
+                ))}
+                {(!viewReport.chartData?.visitsByDay || viewReport.chartData.visitsByDay.length === 0) && (
+                  <tr>
+                    <td colSpan={2} className="py-6 text-center text-zinc-500 text-sm">No visitor logs found for this period.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-          <FileText className="w-6 h-6 text-purple-400" />
-          Content Board & Resolution Hub
-        </h1>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Manage visitor announcements slider, resolve facility issues & missing check-in streak disputes.
-        </p>
-      </div>
+    <div className="p-8 max-w-7xl mx-auto transition-opacity duration-500 ease-in-out opacity-100">
+      
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Delete Report"
+        message={`Delete the report "${deleteTitle}"? This cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+      />
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-800 gap-2">
-        <button
-          onClick={() => setActiveTab('announcements')}
-          className={`px-4 py-2 text-xs font-bold rounded-t-xl transition ${
-            activeTab === 'announcements'
-              ? 'bg-slate-900 border-t-2 border-emerald-500 text-emerald-400'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          Announcements Slider Board ({announcements.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('issues')}
-          className={`px-4 py-2 text-xs font-bold rounded-t-xl transition ${
-            activeTab === 'issues'
-              ? 'bg-slate-900 border-t-2 border-emerald-500 text-emerald-400'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          Visitor Flagged Issues ({issues.filter((i) => i.status !== 'resolved').length} open)
-        </button>
-        <button
-          onClick={() => setActiveTab('audit')}
-          className={`px-4 py-2 text-xs font-bold rounded-t-xl transition ${
-            activeTab === 'audit'
-              ? 'bg-slate-900 border-t-2 border-emerald-500 text-emerald-400'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          Audit Logs
-        </button>
-      </div>
-
-      {/* TAB 1: ANNOUNCEMENTS */}
-      {activeTab === 'announcements' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-sm font-bold text-slate-100">Active Mobile Announcements</h2>
-            <button
-              onClick={() => setShowAnnounceModal(true)}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create Announcement</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {announcements.map((a) => (
-              <div key={a._id} className="p-4 rounded-xl bg-slate-800 border border-slate-700 flex flex-col justify-between space-y-3">
-                <div className="flex items-start gap-3">
-                  {a.imageUrl ? (
-                    <img src={a.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-slate-700 flex items-center justify-center text-slate-400 shrink-0">
-                      <Image className="w-6 h-6" />
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">
-                      {a.category}
-                    </span>
-                    <h3 className="text-sm font-bold text-slate-100 mt-1">{a.title}</h3>
-                    <p className="text-xs text-slate-300 mt-0.5">{a.body}</p>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-2 border-t border-slate-700/60">
-                  <button
-                    onClick={() => handleDeleteAnnouncement(a._id)}
-                    className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2 py-1 rounded bg-rose-950/40"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete</span>
-                  </button>
-                </div>
+      {isGenerateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-zinc-900">Generate Report</h3>
+              <button 
+                onClick={() => !isGenerating && setIsGenerateModalOpen(false)}
+                className="p-2 text-zinc-400 hover:text-zinc-600 rounded-lg hover:bg-zinc-100 transition-colors"
+                disabled={isGenerating}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Select Month</label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  disabled={isGenerating}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 text-sm bg-white"
+                >
+                  {MONTHS.map((m, idx) => (
+                    <option key={m} value={idx + 1}>{m}</option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: VISITOR ISSUES */}
-      {activeTab === 'issues' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-          <h2 className="text-sm font-bold text-slate-100">Visitor Issue Flags & Check-in Disputes</h2>
-          <div className="space-y-3">
-            {issues.map((iss) => (
-              <div key={iss._id} className="p-4 rounded-xl bg-slate-800 border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">
-                      {iss.category}
-                    </span>
-                    <span
-                      className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded ${
-                        iss.status === 'resolved'
-                          ? 'bg-emerald-500/20 text-emerald-300'
-                          : 'bg-rose-500/20 text-rose-300'
-                      }`}
-                    >
-                      {iss.status}
-                    </span>
-                    <span className="text-xs font-mono text-slate-400">
-                      Score: +{(iss.upvotes || 0) - (iss.downvotes || 0)}
-                    </span>
-                  </div>
-                  <p className="text-xs font-semibold text-slate-100 mt-1">{iss.description}</p>
-                  {iss.reporterId && (
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Reported by: <span className="text-slate-200">{iss.reporterId.displayName}</span> (Streak: {iss.reporterId.currentStreak || 0}d)
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {iss.category === 'missing-checkin' && iss.status !== 'resolved' && (
-                    <button
-                      onClick={() => resolveMissingCheckinDispute(iss._id)}
-                      className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-md"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Grant Backdated Check-in (+1 Streak)</span>
-                    </button>
-                  )}
-                  {iss.status !== 'resolved' && (
-                    <button
-                      onClick={() => updateIssueStatus(iss._id, 'resolved')}
-                      className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium"
-                    >
-                      Mark Resolved
-                    </button>
-                  )}
-                </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Select Year</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  disabled={isGenerating}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 text-sm bg-white"
+                >
+                  {YEARS.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: AUDIT LOGS */}
-      {activeTab === 'audit' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-          <h2 className="text-sm font-bold text-slate-100 mb-3">System Audit Logs</h2>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {auditLogs.map((log) => (
-              <div key={log._id} className="p-3 bg-slate-800/60 rounded-lg text-xs font-mono flex justify-between">
-                <div>
-                  <span className="text-emerald-400 font-bold">{log.action}</span>
-                  <span className="text-slate-400 ml-2">by {log.performedBy}</span>
-                </div>
-                <span className="text-slate-500">{new Date(log.createdAt).toLocaleString()}</span>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Report Type</label>
+                <select
+                  value={selectedReportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  disabled={isGenerating}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 text-sm bg-white"
+                >
+                  {REPORT_TYPE.map((rt) => (
+                    <option key={rt} value={rt}>{rt}</option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Announcement Modal */}
-      {showAnnounceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-base font-bold text-slate-100 mb-4">Create Board Announcement</h3>
-            <form onSubmit={handleCreateAnnouncement} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1">Title</label>
-                <input
-                  type="text"
-                  required
-                  value={announceForm.title}
-                  onChange={(e) => setAnnounceForm({ ...announceForm, title: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                />
-              </div>
-              <div>
-                <label className="block text-slate-400 mb-1">Description / Body</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={announceForm.body}
-                  onChange={(e) => setAnnounceForm({ ...announceForm, body: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-400 mb-1">Category</label>
-                  <select
-                    value={announceForm.category}
-                    onChange={(e) => setAnnounceForm({ ...announceForm, category: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                  >
-                    <option value="pinned">Pinned</option>
-                    <option value="event">Event</option>
-                    <option value="class">Class</option>
-                    <option value="notice">Notice</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Image URL (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="https://..."
-                    value={announceForm.imageUrl}
-                    onChange={(e) => setAnnounceForm({ ...announceForm, imageUrl: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-100"
-                  />
-                </div>
-              </div>
-              <div className="pt-3 flex justify-end gap-2">
+            
+              
+              <div className="flex justify-end gap-3">
                 <button
-                  type="button"
-                  onClick={() => setShowAnnounceModal(false)}
-                  className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg"
+                  onClick={() => setIsGenerateModalOpen(false)}
+                  disabled={isGenerating}
+                  className="px-4 py-2 text-zinc-600 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-50 text-sm font-medium"
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold">
-                  Publish
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 text-sm font-medium flex items-center gap-2 disabled:opacity-70"
+                >
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileBarChart2 className="w-4 h-4" />}
+                  {isGenerating ? 'Generating...' : 'Confirm'}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
+
+      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white rounded-xl border border-zinc-200/60 shadow-sm">
+            <FileBarChart2 className="w-6 h-6 text-zinc-900" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Reports</h1>
+            <p className="text-zinc-500 text-sm mt-1">Generate, view, and export monthly system reports.</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExportCurrentMonthExcel}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Export Excel (.xlsx)
+          </button>
+          <button 
+            onClick={() => setIsGenerateModalOpen(true)}
+            className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Generate Report
+          </button>
+        </div>
+      </header>
+
+      <div className="mb-6 flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-zinc-200/60 shadow-sm">
+        <div className="flex-1 relative w-full">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input 
+            type="text" 
+            placeholder="Search reports by title or author..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 text-sm"
+          />
+        </div>
+        <select 
+          value={filterType}
+          onChange={e => setFilterType(e.target.value)}
+          className="w-full sm:w-auto px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 text-sm bg-white"
+        >
+          {REPORT_TYPE.map((reportsType,index)=>(
+            <option key={index} value={reportsType}>{reportsType}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-zinc-50/50 border-b border-zinc-200/60">
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Report Title/Period</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Month Covered</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Date Generated</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Generated By</th>
+                <th className="py-3 px-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200/60">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-zinc-500">
+                    <div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin mx-auto mb-3"></div>
+                    Loading reports...
+                  </td>
+                </tr>
+              ) : filteredReports.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-zinc-500">
+                    <AlertCircle className="w-8 h-8 mx-auto mb-3 text-zinc-300" />
+                    No reports found.
+                  </td>
+                </tr>
+              ) : (
+                paginatedReports.map(report => (
+                  <tr key={report._id} className="hover:bg-zinc-50/50 transition-colors">
+
+                    <td className="py-3 px-4">
+                      <div className="font-medium text-zinc-900">{report.title}</div>
+                      <div className="text-xs text-zinc-500">{report.reportType === 'monthly_summary' ? 'Monthly Snapshot' : 'Custom Report'}</div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-zinc-600">
+                      {format(new Date(report.dateRange.from), 'MMMM yyyy')}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-zinc-600">
+                      {format(new Date(report.createdAt), 'MMM d, yyyy')}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-zinc-600">
+                      {report.generatedBy?.name || 'Admin'}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setViewReport(report)}
+                          className="p-1.5 text-zinc-600 bg-white border border-zinc-200 rounded-md hover:bg-zinc-50 transition-colors"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDownload(report, e)}
+                          className="p-1.5 text-zinc-600 bg-white border border-zinc-200 rounded-md hover:bg-zinc-50 transition-colors"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeleteTitle(report.title);
+                            setDeleteId(report._id);
+                          }}
+                          className="p-1.5 text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-6 bg-zinc-50/50 border-t border-zinc-100">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      </div>
     </div>
   );
 }

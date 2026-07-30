@@ -1,154 +1,80 @@
-import { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Coffee,
-  Calendar,
-  Monitor,
-  FileText,
-  QrCode,
-  LogOut,
-  Smartphone,
-  Menu,
-  X,
-} from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+
+import { Outlet, NavLink } from 'react-router-dom';
+import { LayoutDashboard, Coffee, MonitorPlay, ServerCrash, FileBarChart2, Activity, QrCode, Smartphone } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+const navItems = [
+  { name: 'Overview', path: '/', icon: LayoutDashboard },
+  { name: 'Internet Lounge', path: '/lounge', icon: Coffee },
+  { name: 'Rooms & Labs', path: '/rooms', icon: MonitorPlay },
+  { name: 'Devices', path: '/devices', icon: ServerCrash },
+  { name: 'Reports', path: '/reports', icon: FileBarChart2 },
+  { name: 'QR Attendance', path: '/attendance-qr', icon: QrCode },
+  { name: 'Mobile Hub', path: '/mobile-hub', icon: Smartphone },
+];
 
 export default function DashboardLayout() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const navItems = [
-    { label: 'Overview', path: '/', icon: LayoutDashboard },
-    { label: 'Internet Lounge', path: '/lounge', icon: Coffee },
-    { label: 'Room Management', path: '/rooms', icon: Calendar },
-    { label: 'Device Control', path: '/devices', icon: Monitor },
-    { label: 'Reports & Issues', path: '/reports', icon: FileText },
-    { label: 'Attendance QR', path: '/attendance-qr', icon: QrCode },
-  ];
-
   return (
-    <div className="min-h-screen flex bg-slate-950 text-slate-100">
-      {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex lg:w-64 flex-col border-r border-slate-800 bg-slate-900/90 p-4 sticky top-0 h-screen">
-        <div className="flex items-center gap-3 px-3 py-3 border-b border-slate-800 mb-6">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-500/30">
-            IAC
-          </div>
-          <div>
-            <h1 className="font-bold text-slate-100 text-sm leading-tight">IAC Staff Portal</h1>
-            <p className="text-xs text-slate-400">Management & Control</p>
-          </div>
-        </div>
-
-        {/* Visitor Hub Switcher Banner */}
-        <button
-          onClick={() => navigate('/hub')}
-          className="mb-6 w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 hover:border-emerald-400 transition group text-xs font-semibold"
-        >
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-            <span>Visitor Mobile App</span>
-          </div>
-          <span className="bg-emerald-500/30 text-emerald-200 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded">Hub</span>
-        </button>
-
-        <nav className="flex-1 space-y-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
-                    isActive
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                      : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                  }`
-                }
-              >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        <div className="border-t border-slate-800 pt-4 mt-auto">
-          <div className="flex items-center justify-between px-2">
-            <div>
-              <p className="text-xs font-semibold text-slate-200">{user?.name || 'Staff'}</p>
-              <p className="text-[10px] text-slate-400 capitalize">{user?.role || 'Staff Role'}</p>
+    <div className="flex h-screen w-full bg-zinc-50 text-zinc-900 font-sans tracking-tight">
+      {/* Sidebar Navigation */}
+      <nav className="w-72 border-r border-zinc-200/80 bg-white/50 backdrop-blur-xl flex flex-col justify-between">
+        <div>
+          <div className="px-8 pt-10 pb-8 flex items-center gap-3">
+            <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center shadow-md">
+              <Activity className="w-5 h-5 text-zinc-50" />
             </div>
-            <button
-              onClick={logout}
-              title="Log out"
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">
+              IAC Manager
+            </h1>
           </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-              IAC
-            </div>
-            <span className="font-bold text-xs text-slate-100">IAC Portal</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/hub')}
-              className="px-2.5 py-1.5 rounded-lg bg-emerald-600/30 text-emerald-300 text-xs font-medium flex items-center gap-1"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>The Hub</span>
-            </button>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 text-slate-300 hover:bg-slate-800 rounded-lg"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </header>
-
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-slate-900 border-b border-slate-800 p-4 space-y-2">
+          
+          <div className="px-4 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  end={item.path === '/'}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${
-                      isActive ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-300 hover:bg-slate-800'
-                    }`
-                  }
+                  className={({ isActive }) => cn(
+                    "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                    isActive 
+                      ? "bg-zinc-900 text-white shadow-md shadow-zinc-900/10" 
+                      : "text-zinc-500 hover:bg-zinc-100/80 hover:text-zinc-900"
+                  )}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <Icon className={cn("w-5 h-5 transition-transform duration-200 group-hover:scale-110", "opacity-80")} />
+                  {item.name}
                 </NavLink>
               );
             })}
           </div>
-        )}
+        </div>
+        
+        {/* User profile area */}
+        <div className="p-6">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-zinc-50 border border-zinc-100 hover:border-zinc-200 transition-colors cursor-pointer">
+            <div className="w-10 h-10 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-600 font-semibold text-sm shadow-inner">
+              AD
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-zinc-900 text-sm truncate">Admin User</p>
+              <p className="text-zinc-500 text-xs truncate">admin@iac.local</p>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-        <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto">
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-auto bg-zinc-50/50">
+        <div className="max-w-7xl mx-auto w-full h-full">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,16 +1,33 @@
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken')
 
-const JWT_SECRET = process.env.JWT_SECRET || 'iac_super_secret_jwt_key_2026';
-
-const signAccessToken = (payload, expiresIn = '7d') => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+const signAccessToken = (userId) =>{
+    return jwt.sign(
+        {id:userId},
+        process.env.JWT_SECRET,
+        {expiresIn:process.env.JWT_EXPIRES_IN}
+    );
+};
+const signAccessTicket = (userId,duration)=>{
+    return jwt.sign(
+        {id:userId},
+        process.env.JWT_TICKET,
+        {expiresIn:duration}
+    )
+}
+const signRefreshToken = (userId) =>{
+    return jwt.sign(
+        {id:userId},
+        process.env.JWT_REFRESH_SECRET,
+        {expiresIn:process.env.JWT_REFRESH_EXPIRES_IN}
+    );
 };
 
-const verifyAccessToken = (token) => {
-  return jwt.verify(token, JWT_SECRET);
+const verifyAccessToken = (token)=>{
+    return jwt.verify(token, process.env.JWT_SECRET);
 };
 
-module.exports = {
-  signAccessToken,
-  verifyAccessToken,
+const verifyRefreshToken = (token)=>{
+    return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 };
+
+module.exports = {signAccessToken,signRefreshToken,verifyAccessToken,verifyRefreshToken,signAccessTicket};

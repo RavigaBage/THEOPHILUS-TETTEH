@@ -1,43 +1,35 @@
 const mongoose = require('mongoose');
 
-const AnnouncementSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    body: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    category: {
-      type: String,
-      enum: ['pinned', 'event', 'class', 'notice'],
-      default: 'notice',
-    },
-    imageUrl: {
-      type: String,
-      default: '',
-    },
-    startsAt: {
-      type: Date,
-      default: Date.now,
-    },
-    endsAt: {
-      type: Date,
-    },
-    sortOrder: {
-      type: Number,
-      default: 0,
-    },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Iac_users',
-    },
+const AnnouncementSchema = new mongoose.Schema({
+  category: {
+    type: String,
+    enum: ['pinned', 'event', 'class', 'notice'],
+    default: 'notice',
   },
-  { timestamps: true }
-);
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    default: '',
+  },
+  imageUrl: {
+    type: String,
+    default: null,
+  },
+  startsAt: {
+    type: Date,
+    default: null,
+  },
+  endsAt: {
+    type: Date,
+    default: null,
+  },
+  sortOrder: {
+    type: Number,
+    default: 0,
+  },
+}, { timestamps: true });
 
-module.exports = mongoose.model('Announcement', AnnouncementSchema, 'announcements');
+module.exports = mongoose.models.Announcement || mongoose.model('Announcement', AnnouncementSchema);
