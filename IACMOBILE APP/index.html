@@ -38,7 +38,7 @@
     display:flex; flex-direction:column; position:relative;
   }
   .statusbar{ display:flex; justify-content:space-between; padding:16px 22px 4px; color:var(--graphite); font-family:'IBM Plex Mono',monospace; font-size:12px; }
-  .topbar{ display:flex; justify-content:space-between; align-items:center; padding:6px 22px 18px; }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; padding:6px 22px 14px; }
   .wordmark{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; color:var(--ticket); letter-spacing:-0.02em; }
   .wordmark span{ color:var(--signal); }
   .datepill{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--graphite); border:1px solid #2C4238; padding:5px 10px; border-radius:20px; }
@@ -71,8 +71,6 @@
   @keyframes punch{ 0%{ transform:scale(0) rotate(-30deg); } 60%{ transform:scale(1.3) rotate(8deg); } 100%{ transform:scale(1) rotate(0); } }
 
   .pass-foot{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-  .anon-toggle{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--graphite); font-family:'IBM Plex Mono',monospace; }
-  .anon-toggle input{ accent-color:var(--ember); }
   .checkin-btn{
     background:var(--ink); color:#fff; border:none; font-family:'Space Grotesk',sans-serif;
     font-weight:700; font-size:13px; padding:12px 16px; border-radius:12px; cursor:pointer;
@@ -80,7 +78,14 @@
   }
   .checkin-btn:hover{ background:#1f332a; }
   .checkin-btn:active{ transform:scale(0.96); }
-  .checkin-btn:disabled{ opacity:0.6; cursor:default; }
+  .checkin-btn:disabled{ opacity:0.65; cursor:not-allowed; background:#2A3D34; }
+
+  .checkout-btn{
+    background:#DC2626; color:#fff; border:none; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:12px; padding:10px 14px; border-radius:12px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; transition:transform 0.15s;
+  }
+  .checkout-btn:hover{ background:#B91C1C; }
 
   .qr-btn{
     background:var(--marigold); color:#412402; border:none; font-family:'Space Grotesk',sans-serif;
@@ -88,14 +93,16 @@
     display:flex; align-items:center; gap:6px; transition:transform 0.15s; text-decoration:none;
   }
 
-  .verify-panel{ background:#fff; border-radius:12px; padding:14px; margin-top:2px; }
+  .verify-panel{ background:#fff; border-radius:12px; padding:14px; margin-top:10px; border:1px solid var(--ticket-line); }
   .verify-top{ display:flex; justify-content:space-between; align-items:center; }
   .ticket-id{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:20px; color:var(--ink); letter-spacing:0.06em; margin:4px 0; }
   .verify-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--graphite); text-transform:uppercase; letter-spacing:0.06em; }
-  .verify-status{ display:flex; align-items:center; gap:7px; margin-top:10px; font-size:12px; color:#8A6106; font-weight:500; }
-  .verify-status.confirmed{ color:#3B6D11; font-weight:700; }
-  .pulse-dot{ width:8px; height:8px; border-radius:50%; background:#FFC24B; animation:pulse 1s infinite; }
-  .verify-status.confirmed .pulse-dot{ background:#639922; animation:none; }
+  .verify-status{ display:flex; align-items:center; gap:7px; margin-top:8px; font-size:12px; color:#8A6106; font-weight:600; }
+  .verify-status.confirmed{ color:#166534; font-weight:700; }
+  .verify-status.declined{ color:#991B1B; font-weight:700; }
+  .pulse-dot{ width:8px; height:8px; border-radius:50%; background:#FFC24B; animation:pulse 1s infinite; shrink-0; }
+  .verify-status.confirmed .pulse-dot{ background:#22C55E; animation:none; }
+  .verify-status.declined .pulse-dot{ background:#EF4444; animation:none; }
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   .confetti{ position:fixed; width:8px; height:8px; border-radius:50%; background:var(--marigold); pointer-events:none; z-index:100; }
   @keyframes fly{ to{ transform:translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
@@ -116,6 +123,7 @@
 
   .board{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:6px; margin-bottom:22px; }
 
+  /* ---- home carousel slider ---- */
   .slider{ position:relative; border-radius:16px; overflow:hidden; margin-bottom:22px; background:#0A130F; min-height:160px; }
   .slider-track{ display:flex; transition:transform 0.45s cubic-bezier(.2,.8,.3,1); }
   .slide{ min-width:100%; position:relative; height:160px; }
@@ -128,28 +136,57 @@
   .slide-badge.notice{ background:#F87171; color:#450A0A; }
   .slide-h{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:#fff; }
   .slide-d{ font-size:11px; color:#D9DED9; font-family:'IBM Plex Mono',monospace; margin-top:3px; }
-  .slider-arrow{ position:absolute; top:50%; transform:translateY(-50%); background:rgba(10,19,15,0.55); border:none; color:#fff; width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:12px; z-index:2; }
+  .slider-arrow{ position:absolute; top:50%; transform:translateY(-50%); background:rgba(10,19,15,0.65); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px; z-index:2; display:flex; align-items:center; justify-content:center; }
   .slider-arrow.prev{ left:8px; } .slider-arrow.next{ right:8px; }
   .dots{ position:absolute; bottom:10px; right:14px; display:flex; gap:5px; z-index:2; }
-  .dot{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.35); cursor:pointer; }
-  .dot.active{ background:#fff; width:14px; border-radius:3px; transition:width 0.25s; }
+  .dot{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.35); cursor:pointer; }
+  .dot.active{ background:#fff; width:16px; border-radius:3px; transition:width 0.25s; }
 
-  .lb-row{ display:flex; align-items:center; gap:12px; padding:10px 4px; }
-  .lb-rank{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--graphite); width:18px; }
+  /* ---- announcement vertical list (Redesigned Announcement Page) ---- */
+  .announcement-card{
+    background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:14px; margin-bottom:12px;
+    transition:border-color 0.2s, transform 0.15s;
+  }
+  .announcement-card:hover{ border-color:var(--signal); }
+  .announcement-card .header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .announcement-card .title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; color:var(--ticket); margin-bottom:6px; }
+  .announcement-card .date{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--graphite); }
+  .announcement-card .desc{ font-size:12px; color:#D0D7D3; line-height:1.45; }
+  .announcement-card img{ width:100%; height:130px; object-fit:cover; border-radius:10px; margin-top:10px; }
+
+  /* ---- booking history portal ---- */
+  .history-card{
+    background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:14px; margin-bottom:12px;
+  }
+  .history-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+  .history-title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:var(--ticket); }
+  .history-code{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--signal); font-weight:600; margin-top:2px; }
+  .status-pill{ font-family:'IBM Plex Mono',monospace; font-size:9px; padding:4px 8px; border-radius:6px; text-transform:uppercase; font-weight:700; white-space:nowrap; }
+  .status-pill.approved, .status-pill.confirmed{ background:#166534; color:#DCFCE7; }
+  .status-pill.pending{ background:#8A6106; color:#FEF3C7; }
+  .status-pill.declined, .status-pill.rejected{ background:#991B1B; color:#FEE2E2; }
+  .status-pill.checked_out{ background:#374151; color:#E5E7EB; }
+
+  .history-details{ font-size:11px; color:var(--graphite); margin-top:8px; padding-top:8px; border-top:1px dashed #2C4238; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+
+  /* ---- leaderboard ---- */
+  .lb-row{ display:flex; align-items:center; gap:12px; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .lb-row:last-child{ border-bottom:none; }
+  .lb-rank{ font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; color:var(--graphite); width:22px; text-align:center; }
   .lb-avatar{ width:32px; height:32px; border-radius:50%; background:var(--signal); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; color:#04342C; flex-shrink:0; }
-  .lb-name{ flex:1; font-size:13px; color:var(--ticket); }
-  .lb-streak{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--marigold); }
-  .lb-row.me{ background:var(--ink-3); border-radius:10px; }
+  .lb-name{ flex:1; font-size:13px; color:var(--ticket); font-weight:500; }
+  .lb-streak{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--marigold); font-weight:700; }
+  .lb-row.me{ background:#1B352B; border-radius:10px; border-bottom:none; }
 
   .navbar{
-    position:absolute; bottom:14px; left:14px; right:14px; background:var(--ink-3);
-    border:1px solid #2C4238; border-radius:20px; display:flex; padding:8px; z-index:10;
+    position:absolute; bottom:14px; left:12px; right:12px; background:var(--ink-3);
+    border:1px solid #2C4238; border-radius:20px; display:flex; padding:6px; z-index:10;
   }
-  .navitem{ flex:1; text-align:center; padding:8px 0; border-radius:14px; cursor:pointer; transition:background 0.2s; }
-  .navitem .ic{ font-size:17px; }
-  .navitem .l{ font-size:9px; color:var(--graphite); font-family:'IBM Plex Mono',monospace; margin-top:3px; text-transform:uppercase; }
+  .navitem{ flex:1; text-align:center; padding:7px 0; border-radius:12px; cursor:pointer; transition:background 0.2s; }
+  .navitem .ic{ font-size:16px; }
+  .navitem .l{ font-size:8px; color:var(--graphite); font-family:'IBM Plex Mono',monospace; margin-top:2px; text-transform:uppercase; letter-spacing:0.02em; }
   .navitem.active{ background:var(--ember); }
-  .navitem.active .l{ color:#3A1200; }
+  .navitem.active .l{ color:#3A1200; font-weight:700; }
 
   .room-card{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:14px; margin-bottom:12px; cursor:pointer; transition:border-color .2s; }
   .room-card:hover{ border-color:var(--signal); }
@@ -221,7 +258,7 @@
 
     <div class="content">
 
-      <!-- HOME -->
+      <!-- HOME TAB -->
       <div id="tab-home" class="fadein">
         <div class="pass">
           <div class="pass-top">
@@ -233,6 +270,16 @@
           </div>
           <div class="perf"></div>
           <div class="holes" id="holesRow"></div>
+
+          <!-- CHECK-IN STATUS BADGE / CONTROLS -->
+          <div id="checkinStatusBanner" class="hidden" style="margin-bottom:12px; background:#164E63; border:1px solid #0891B2; padding:10px 12px; border-radius:10px; font-size:12px; color:#ECFEFF; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>✓ Checked In for Today</strong>
+              <div style="font-size:10px; color:#A5F3FC; font-family:'IBM Plex Mono',monospace;" id="bannerTicketCode">Ticket ID: IAC-0000</div>
+            </div>
+            <button class="checkout-btn" onclick="checkoutActiveTicket()">Check Out</button>
+          </div>
+
           <div class="pass-foot" id="passFoot">
             <button class="qr-btn" onclick="openAttendanceForm()">
               <i>📷</i> Scan QR / Form
@@ -246,17 +293,33 @@
 
         <div class="quick">
           <div class="qtile" onclick="showTab('book')"><div class="ic">🗓</div><div class="t">Book a room</div><div class="s">Seminar · Conference · Lab</div></div>
-          <div class="qtile" onclick="showTab('report')"><div class="ic">⚑</div><div class="t">Report an issue</div><div class="s">Wifi, AC, noise</div></div>
+          <div class="qtile" onclick="showTab('history')"><div class="ic">📜</div><div class="t">My History</div><div class="s">Check-ins & Bookings</div></div>
         </div>
 
-        <div class="sec-head"><div class="sec-title">On the board</div><div class="sec-link" onclick="showTab('board')">view all →</div></div>
+        <!-- MOBILE HOME PAGE FEATURED ANNOUNCEMENTS CAROUSEL SLIDER -->
+        <div class="sec-head"><div class="sec-title">On the board</div><div class="sec-link" onclick="showTab('board')">view list →</div></div>
         <div class="slider" id="sliderPreview"></div>
 
         <div class="sec-head"><div class="sec-title">Top streaks</div><div class="sec-link" onclick="showTab('rank')">leaderboard →</div></div>
         <div class="board" id="lbPreview"></div>
       </div>
 
-      <!-- BOOK -->
+      <!-- BOOKING HISTORY PORTAL TAB -->
+      <div id="tab-history" class="hidden">
+        <div class="sec-title" style="margin-bottom:6px;">Booking & Check-in History</div>
+        <div style="font-size:11px; color:var(--graphite); margin-bottom:12px;">View all your past and pending check-in passes and room requests.</div>
+
+        <!-- Filter Pills -->
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <button class="status-pill approved" onclick="filterHistory('all')" style="cursor:pointer;">All</button>
+          <button class="status-pill pending" onclick="filterHistory('checkin')" style="cursor:pointer;">Check-ins</button>
+          <button class="status-pill checked_out" onclick="filterHistory('booking')" style="cursor:pointer;">Room Bookings</button>
+        </div>
+
+        <div id="historyList"></div>
+      </div>
+
+      <!-- BOOK ROOM TAB -->
       <div id="tab-book" class="hidden">
         <div class="sec-title" style="margin-bottom:12px;">Book a room</div>
         <div class="room-card" onclick="pickRoom(this,'Seminar room', '3')">
@@ -288,25 +351,39 @@
         </div>
       </div>
 
-      <!-- BOARD -->
+      <!-- REDESIGNED ANNOUNCEMENT PAGE (Admin / Clean Vertical List Layout) -->
       <div id="tab-board" class="hidden">
-        <div class="sec-title" style="margin-bottom:12px;">Announcements & Events</div>
-        <div class="slider" id="sliderFull"></div>
+        <div class="sec-title" style="margin-bottom:4px;">Announcements & Events</div>
+        <div style="font-size:11px; color:var(--graphite); margin-bottom:14px;">Latest news, scheduled maintenance, and community activities.</div>
+        <div id="announcementsList"></div>
       </div>
 
-      <!-- RANK -->
+      <!-- RANKINGS / LEADERBOARD TAB -->
       <div id="tab-rank" class="hidden">
-        <div class="sec-title" style="margin-bottom:12px;">Streak Leaderboard</div>
+        <div class="sec-title" style="margin-bottom:12px;">Streak & Attendance Leaderboard</div>
+        <div id="myRankCard" style="background:#1B352B; border:1px solid #3FC7B8; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:10px; color:var(--signal); font-family:'IBM Plex Mono',monospace; text-transform:uppercase;">Your Current Rank</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; color:#fff;" id="myRankDisplay">Rank #--</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; color:var(--marigold);" id="myStreakDisplay">0d streak</div>
+            <div style="font-size:10px; color:var(--graphite); font-family:'IBM Plex Mono',monospace;" id="myTotalCheckinsDisplay">0 total check-ins</div>
+          </div>
+        </div>
+
         <div class="board" id="lbFull"></div>
-        <div class="sec-title" style="margin:18px 0 8px; font-size:13px;">Your Milestones</div>
+
+        <div class="sec-title" style="margin:18px 0 8px; font-size:13px;">Streak Milestones</div>
         <div class="quick">
-          <div class="qtile" style="text-align:center;"><div style="font-size:20px;">🔥</div><div class="t">Spark</div><div class="s">7 days</div></div>
-          <div class="qtile" style="text-align:center;"><div style="font-size:20px;">🔥</div><div class="t">Ember</div><div class="s">14 days</div></div>
-          <div class="qtile" style="text-align:center; opacity:0.4;"><div style="font-size:20px;">🔥</div><div class="t">Flame</div><div class="s">30 days</div></div>
+          <div class="qtile" id="mSpark" style="text-align:center;"><div style="font-size:20px;">⚡</div><div class="t">Spark</div><div class="s">3 days</div></div>
+          <div class="qtile" id="mFire" style="text-align:center;"><div style="font-size:20px;">🔥</div><div class="t">Fire</div><div class="s">7 days</div></div>
+          <div class="qtile" id="mEmber" style="text-align:center;"><div style="font-size:20px;">🌟</div><div class="t">Ember</div><div class="s">14 days</div></div>
+          <div class="qtile" id="mFlame" style="text-align:center;"><div style="font-size:20px;">🏆</div><div class="t">Flame</div><div class="s">30 days</div></div>
         </div>
       </div>
 
-      <!-- REPORT -->
+      <!-- REPORT ISSUE TAB -->
       <div id="tab-report" class="hidden">
         <div class="sec-title" style="margin-bottom:12px;">Report an issue</div>
         <div class="flag-grid">
@@ -334,8 +411,10 @@
 
     </div>
 
+    <!-- BOTTOM NAVBAR -->
     <div class="navbar">
       <div class="navitem active" data-tab="home" onclick="showTab('home')"><div class="ic">⌂</div><div class="l">home</div></div>
+      <div class="navitem" data-tab="history" onclick="showTab('history')"><div class="ic">📜</div><div class="l">history</div></div>
       <div class="navitem" data-tab="book" onclick="showTab('book')"><div class="ic">🗓</div><div class="l">book</div></div>
       <div class="navitem" data-tab="board" onclick="showTab('board')"><div class="ic">☰</div><div class="l">board</div></div>
       <div class="navitem" data-tab="rank" onclick="showTab('rank')"><div class="ic">🏆</div><div class="l">rank</div></div>
@@ -351,10 +430,14 @@ let mobileUserName = localStorage.getItem('iac_mobile_user_name') || 'Mobile Mem
 let mobileUserEmail = localStorage.getItem('iac_mobile_user_email') || '';
 
 let streak = 0;
+let longestStreak = 0;
+let totalCheckins = 0;
 let currentTicketId = null;
 let pollTimer = null;
 let liveAnnouncements = [];
 let liveIssues = [];
+let rawHistoryData = [];
+let activeTodayTicket = null;
 
 function showToast(msg) {
   const toast = document.getElementById('toast');
@@ -451,6 +534,7 @@ async function checkAuthAndInit() {
 
   updateUserBadge();
   fetchUserProfile();
+  checkTodayCheckinStatus();
   loadAnnouncements();
   loadLeaderboard('lbPreview', 3);
   loadIssues();
@@ -469,6 +553,7 @@ function updateUserBadge() {
 }
 
 async function handleLogout() {
+  stopTicketPolling();
   const token = localStorage.getItem('iac_mobile_access_token');
   if (token) {
     try {
@@ -490,6 +575,7 @@ document.getElementById('bookingDateInput').value = now.toISOString().split('T')
 
 function renderHoles(){
   const wrap = document.getElementById('holesRow');
+  if (!wrap) return;
   wrap.innerHTML='';
   const total = 21;
   for(let i=0;i<total;i++){
@@ -506,12 +592,206 @@ async function fetchUserProfile() {
     if (res.ok) {
       const data = await res.json();
       streak = data.streak || 0;
+      longestStreak = data.longestStreak || streak;
+      totalCheckins = data.totalCheckins || 0;
       document.getElementById('streakN').textContent = streak;
       renderHoles();
+      updateMilestones();
     }
   } catch(e) { console.warn('Profile fetch error:', e); }
 }
 
+function updateMilestones() {
+  const setM = (id, target) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (streak >= target) {
+      el.style.opacity = '1';
+      el.style.borderColor = 'var(--signal)';
+    } else {
+      el.style.opacity = '0.4';
+      el.style.borderColor = '#2C4238';
+    }
+  };
+  setM('mSpark', 3);
+  setM('mFire', 7);
+  setM('mEmber', 14);
+  setM('mFlame', 30);
+}
+
+// Check Today's Checkin Status (Req 1: Duplicate Prevention & UI Update)
+async function checkTodayCheckinStatus() {
+  if (!mobileUserId) return;
+  try {
+    const res = await authFetch(`/api/iac-mobile/checkin-tickets/today/${mobileUserId}`);
+    if (res.ok) {
+      const data = await res.json();
+      const banner = document.getElementById('checkinStatusBanner');
+      const btn = document.getElementById('checkinBtn');
+
+      if (data.checkedIn && data.ticket) {
+        activeTodayTicket = data.ticket;
+        banner.classList.remove('hidden');
+        document.getElementById('bannerTicketCode').textContent = `Ticket ID: ${data.ticket.ticketCode} (${data.ticket.status.toUpperCase()})`;
+
+        // Disable Check-In button with clear Duplicate Notice
+        btn.disabled = true;
+        btn.innerHTML = '<i>✓</i> Checked In Today';
+        btn.onclick = () => showToast('You are already checked in for today.');
+
+        if (data.ticket.status === 'pending') {
+          showPendingVerificationPanel(data.ticket);
+          startTicketPolling(data.ticket._id);
+        } else if (data.ticket.status === 'confirmed') {
+          showConfirmedVerificationPanel(data.ticket);
+        }
+      } else {
+        activeTodayTicket = null;
+        banner.classList.add('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<i>▣</i> Check In';
+        btn.onclick = startCheckin;
+      }
+    }
+  } catch(e) { console.warn('Today checkin check error:', e); }
+}
+
+function showPendingVerificationPanel(ticket) {
+  document.getElementById('passFoot').classList.add('hidden');
+  const panel = document.getElementById('verifyPanel');
+  panel.classList.remove('hidden');
+  panel.innerHTML = `<div class="verify-panel fadein">
+      <div class="verify-top"><span class="verify-label">Your Ticket ID</span></div>
+      <div class="ticket-id">${ticket.ticketCode}</div>
+      <div class="verify-status" id="verifyStatus">
+        <span class="pulse-dot"></span> Waiting for admin approval...
+      </div>
+    </div>`;
+}
+
+function showConfirmedVerificationPanel(ticket) {
+  document.getElementById('passFoot').classList.add('hidden');
+  const panel = document.getElementById('verifyPanel');
+  panel.classList.remove('hidden');
+  panel.innerHTML = `<div class="verify-panel fadein">
+      <div class="verify-top"><span class="verify-label">Active Pass Ticket</span></div>
+      <div class="ticket-id">${ticket.ticketCode}</div>
+      <div class="verify-status confirmed" id="verifyStatus">
+        <span class="pulse-dot"></span> Verified by Admin — Checked into Lounge!
+      </div>
+      <button class="checkout-btn" style="margin-top:8px; width:100%; justify-content:center;" onclick="checkoutActiveTicket()">Check Out Now</button>
+    </div>`;
+}
+
+// Real-Time Admin Approval Polling Mechanism (Req 2)
+function startTicketPolling(ticketId) {
+  stopTicketPolling();
+  currentTicketId = ticketId;
+  pollTimer = setInterval(async () => {
+    if (!currentTicketId) return;
+    try {
+      const res = await authFetch(`/api/iac-mobile/checkin-tickets/${currentTicketId}`);
+      if (res.ok) {
+        const ticket = await res.json();
+        if (ticket.status === 'confirmed') {
+          stopTicketPolling();
+          showToast('🎉 Your Check-In was Approved by Admin!');
+          showConfirmedVerificationPanel(ticket);
+          fetchUserProfile();
+          triggerConfetti();
+          checkTodayCheckinStatus();
+        } else if (ticket.status === 'declined') {
+          stopTicketPolling();
+          showToast('Check-in request was declined.');
+          const status = document.getElementById('verifyStatus');
+          if (status) {
+            status.className = 'verify-status declined';
+            status.innerHTML = `<span class="pulse-dot"></span> Request Declined by Staff`;
+          }
+          setTimeout(() => {
+            document.getElementById('verifyPanel').classList.add('hidden');
+            document.getElementById('passFoot').classList.remove('hidden');
+            checkTodayCheckinStatus();
+          }, 4000);
+        } else if (ticket.status === 'checked_out' || ticket.status === 'expired') {
+          stopTicketPolling();
+          checkTodayCheckinStatus();
+        }
+      }
+    } catch(e) { console.warn('Poll status error:', e); }
+  }, 3000);
+}
+
+function stopTicketPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+// User Check-Out Action
+async function checkoutActiveTicket() {
+  if (!activeTodayTicket && !currentTicketId) return;
+  const targetId = activeTodayTicket ? activeTodayTicket._id : currentTicketId;
+  try {
+    const res = await authFetch(`/api/iac-mobile/checkin-tickets/${targetId}/checkout`, {
+      method: 'POST'
+    });
+    if (res.ok) {
+      showToast('Checked out successfully!');
+      stopTicketPolling();
+      document.getElementById('verifyPanel').classList.add('hidden');
+      document.getElementById('passFoot').classList.remove('hidden');
+      checkTodayCheckinStatus();
+      fetchUserProfile();
+    }
+  } catch(e) { showToast('Checkout error'); }
+}
+
+// START CHECK-IN TICKETING
+async function startCheckin(){
+  const btn = document.getElementById('checkinBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+
+  try {
+    const res = await authFetch('/api/iac-mobile/checkin-tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mobileUserId,
+        mobileUserName,
+        mobileUserEmail
+      })
+    });
+
+    const ticket = await res.json();
+    if (!res.ok) {
+      if (ticket.alreadyCheckedIn) {
+        showToast('You are already checked in for today.');
+        checkTodayCheckinStatus();
+        return;
+      }
+      throw new Error(ticket.error || 'Failed to create ticket');
+    }
+
+    currentTicketId = ticket._id;
+    activeTodayTicket = ticket;
+
+    showPendingVerificationPanel(ticket);
+    showToast(`Ticket ${ticket.ticketCode} sent to Admin Dashboard!`);
+
+    // Start real-time polling
+    startTicketPolling(ticket._id);
+
+  } catch(e) {
+    showToast(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Check In';
+  }
+}
+
+// Slider logic for Mobile Home Page Carousel Slider (Req 7)
 const DEFAULT_SLIDE_IMG = 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=600&q=60&auto=format&fit=crop';
 const sliderState = {};
 
@@ -525,13 +805,14 @@ async function loadAnnouncements() {
 
   if (!liveAnnouncements || liveAnnouncements.length === 0) {
     liveAnnouncements = [
-      {category:'pinned', title:'Korean class · beginner track', description:'Tue & Thu, 5:00pm · Training lab', imageUrl:'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&q=60&auto=format&fit=crop'},
-      {category:'event', title:'Founders coffee morning', description:'Sat, 9:00am · Lounge', imageUrl:'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=600&q=60&auto=format&fit=crop'},
-      {category:'notice', title:'Maintenance notice', description:'Lounge closed 6–8am for cleaning'},
+      {category:'pinned', title:'Korean class · beginner track', description:'Tue & Thu, 5:00pm · Training lab', imageUrl:'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&q=60&auto=format&fit=crop', createdAt: new Date()},
+      {category:'event', title:'Founders coffee morning', description:'Sat, 9:00am · Lounge', imageUrl:'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=600&q=60&auto=format&fit=crop', createdAt: new Date()},
+      {category:'notice', title:'Maintenance notice', description:'Lounge closed 6–8am for cleaning', createdAt: new Date()},
     ];
   }
 
   renderSlider('sliderPreview');
+  renderAnnouncementsList();
 }
 
 function renderSlider(target){
@@ -590,39 +871,156 @@ function moveSlider(target, dir){ setSlider(target, (sliderState[target] || 0) +
 
 setInterval(()=>{
   Object.keys(sliderState).forEach(target=>moveSlider(target, 1));
-}, 5000);
+}, 4500);
 
+// Redesigned Announcement Page List View (Req 6: Clean Vertical List)
+function renderAnnouncementsList() {
+  const el = document.getElementById('announcementsList');
+  if (!el) return;
+  el.innerHTML = '';
+
+  if (liveAnnouncements.length === 0) {
+    el.innerHTML = '<div style="font-size:12px; color:var(--graphite); text-align:center; padding:20px;">No announcements posted yet.</div>';
+    return;
+  }
+
+  liveAnnouncements.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'announcement-card fadein';
+    const cat = a.category || 'notice';
+    const dateStr = a.createdAt ? new Date(a.createdAt).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}) : 'Today';
+
+    card.innerHTML = `
+      <div class="header">
+        <span class="slide-badge ${cat}">${cat}</span>
+        <span class="date">${dateStr}</span>
+      </div>
+      <div class="title">${a.title}</div>
+      <div class="desc">${a.description}</div>
+      ${a.imageUrl ? `<img src="${a.imageUrl}" alt="${a.title}">` : ''}
+    `;
+    el.appendChild(card);
+  });
+}
+
+// Booking History Portal (Req 3)
+async function loadHistoryPortal() {
+  const el = document.getElementById('historyList');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center; padding:20px; color:var(--graphite); font-size:12px;">Loading history...</div>';
+
+  try {
+    const res = await authFetch(`/api/iac-mobile/history/${mobileUserId}`);
+    if (res.ok) {
+      rawHistoryData = await res.json();
+      renderHistoryItems(rawHistoryData);
+    } else {
+      el.innerHTML = '<div style="text-align:center; padding:20px; color:var(--graphite); font-size:12px;">Failed to load history records.</div>';
+    }
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center; padding:20px; color:var(--graphite); font-size:12px;">Error fetching history.</div>';
+  }
+}
+
+function filterHistory(filterType) {
+  if (!rawHistoryData) return;
+  if (filterType === 'all') {
+    renderHistoryItems(rawHistoryData);
+  } else {
+    renderHistoryItems(rawHistoryData.filter(item => item.type === filterType));
+  }
+}
+
+function renderHistoryItems(items) {
+  const el = document.getElementById('historyList');
+  if (!el) return;
+  el.innerHTML = '';
+
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div style="text-align:center; padding:20px; color:var(--graphite); font-size:12px;">No history records found.</div>';
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'history-card fadein';
+
+    const statusClass = item.status ? item.status.toLowerCase() : 'pending';
+    const formattedDate = new Date(item.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+
+    card.innerHTML = `
+      <div class="history-header">
+        <div>
+          <div class="history-title">${item.title}</div>
+          <div class="history-code">${item.ticketCode}</div>
+        </div>
+        <span class="status-pill ${statusClass}">${item.statusDisplay || item.status}</span>
+      </div>
+      <div style="font-size:11px; color:#D0D7D3; margin-top:4px;">${item.details}</div>
+      <div class="history-details">
+        <span>📅 ${formattedDate}</span>
+        <span>🕒 Check-In: ${item.checkinTime}</span>
+        ${item.checkoutTime ? `<span>🚪 Check-Out: ${item.checkoutTime}</span>` : ''}
+      </div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+// Rankings / Leaderboard System (Req 5)
 async function loadLeaderboard(target, limit) {
   const el = document.getElementById(target);
   if (!el) return;
   el.innerHTML = '';
 
-  let entries = [];
   try {
-    const res = await fetch(`${API_BASE}/api/iac-mobile/leaderboard`);
-    if (res.ok) entries = await res.json();
-  } catch(e) { console.warn(e); }
+    const res = await authFetch('/api/iac-mobile/rankings');
+    let users = [];
+    if (res.ok) {
+      users = await res.json();
+    }
 
-  if (!entries || entries.length === 0) {
-    entries = [
-      { name: 'Kwabena O.', streak: 41 },
-      { name: 'Guest #182', streak: 33 },
-      { name: mobileUserName + ' (You)', streak: streak, me: true },
-      { name: 'Ama T.', streak: 12 },
-      { name: 'Guest #054', streak: 9 },
-    ];
-  }
+    if (!users || users.length === 0) {
+      users = [
+        { mobileUserId, name: mobileUserName, streak: streak, longestStreak: longestStreak, totalCheckins: totalCheckins, rank: 1 }
+      ];
+    }
 
-  entries.sort((a,b) => b.streak - a.streak);
+    // Highlight logged in user
+    const myEntry = users.find(u => u.mobileUserId === mobileUserId) || { rank: 1, streak: streak, totalCheckins: totalCheckins };
+    const myRankEl = document.getElementById('myRankDisplay');
+    const myStreakEl = document.getElementById('myStreakDisplay');
+    const myTotalEl = document.getElementById('myTotalCheckinsDisplay');
+    if (myRankEl) myRankEl.textContent = `Rank #${myEntry.rank || 1}`;
+    if (myStreakEl) myStreakEl.textContent = `${myEntry.streak || streak}d streak`;
+    if (myTotalEl) myTotalEl.textContent = `${myEntry.totalCheckins || totalCheckins} total check-ins`;
 
-  entries.slice(0, limit || entries.length).forEach((p,i)=>{
-    const row = document.createElement('div');
-    row.className = 'lb-row' + (p.me ? ' me' : '');
-    row.style.padding = '10px 10px';
-    const initials = p.me ? 'YOU' : p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
-    row.innerHTML = `<span class="lb-rank">${i+1}</span><div class="lb-avatar">${initials}</div><div class="lb-name">${p.name}</div><div class="lb-streak">${p.streak}d</div>`;
-    el.appendChild(row);
-  });
+    const displayList = limit ? users.slice(0, limit) : users;
+
+    displayList.forEach((p) => {
+      const isMe = p.mobileUserId === mobileUserId;
+      const row = document.createElement('div');
+      row.className = 'lb-row' + (isMe ? ' me' : '');
+
+      let rankDisplay = `#${p.rank}`;
+      if (p.rank === 1) rankDisplay = '🥇';
+      if (p.rank === 2) rankDisplay = '🥈';
+      if (p.rank === 3) rankDisplay = '🥉';
+
+      const initials = p.name ? p.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : 'MB';
+
+      row.innerHTML = `
+        <span class="lb-rank">${rankDisplay}</span>
+        <div class="lb-avatar">${initials}</div>
+        <div class="lb-name">${p.name}${isMe ? ' (You)' : ''}</div>
+        <div style="text-align:right;">
+          <div class="lb-streak">${p.streak}d streak</div>
+          <div style="font-size:9px; color:var(--graphite); font-family:'IBM Plex Mono',monospace;">${p.totalCheckins || 0} checkins</div>
+        </div>
+      `;
+      el.appendChild(row);
+    });
+  } catch(e) { console.warn('Leaderboard error:', e); }
 }
 
 async function loadIssues(){
@@ -714,7 +1112,8 @@ async function submitCustomIssue() {
 }
 
 function showTab(name){
-  ['home','book','board','rank','report'].forEach(t=>{
+  stopTicketPolling();
+  ['home','history','book','board','rank','report'].forEach(t=>{
     const tabEl = document.getElementById('tab-'+t);
     if (tabEl) tabEl.classList.toggle('hidden', t!==name);
   });
@@ -722,85 +1121,18 @@ function showTab(name){
   const activeEl = document.getElementById('tab-'+name);
   if (activeEl) activeEl.classList.add('fadein');
 
-  if(name==='board') renderSlider('sliderFull');
+  if(name==='home') {
+    checkTodayCheckinStatus();
+    loadLeaderboard('lbPreview', 3);
+  }
+  if(name==='history') loadHistoryPortal();
+  if(name==='board') renderAnnouncementsList();
   if(name==='rank') loadLeaderboard('lbFull');
   if(name==='report') loadIssues();
 }
 
 function openAttendanceForm() {
   window.location.href = '/attendanceForm/index.html';
-}
-
-async function startCheckin(){
-  const btn = document.getElementById('checkinBtn');
-  btn.disabled = true;
-  btn.textContent = 'Generating...';
-
-  try {
-    const res = await authFetch('/api/iac-mobile/checkin-tickets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mobileUserId, mobileUserName, mobileUserEmail })
-    });
-
-    const ticket = await res.json();
-    if (!res.ok) throw new Error(ticket.error || 'Failed to create ticket');
-
-    currentTicketId = ticket._id;
-
-    document.getElementById('passFoot').classList.add('hidden');
-    const panel = document.getElementById('verifyPanel');
-    panel.classList.remove('hidden');
-    panel.innerHTML = `<div class="verify-panel fadein">
-        <div class="verify-top"><span class="verify-label">Your Ticket Code</span></div>
-        <div class="ticket-id">${ticket.ticketCode}</div>
-        <div class="verify-status" id="verifyStatus">
-          <span class="pulse-dot"></span> Waiting for admin confirmation on dashboard...
-        </div>
-      </div>`;
-
-    showToast(`Ticket ${ticket.ticketCode} sent to Admin Dashboard!`);
-
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(checkTicketStatus, 2500);
-
-  } catch(e) {
-    showToast(e.message);
-    btn.disabled = false;
-    btn.textContent = 'Check In';
-  }
-}
-
-async function checkTicketStatus() {
-  if (!currentTicketId) return;
-  try {
-    const res = await authFetch('/api/iac-mobile/checkin-tickets');
-    if (res.ok) {
-      const myTicket = await res.json();
-
-      if (myTicket && myTicket.status === 'confirmed') {
-        clearInterval(pollTimer);
-        pollTimer = null;
-
-        const status = document.getElementById('verifyStatus');
-        if (status) {
-          status.className = 'verify-status confirmed';
-          status.innerHTML = '<span class="pulse-dot"></span> Verified by staff — Checked into Lounge!';
-        }
-
-        fetchUserProfile();
-        triggerConfetti();
-
-        setTimeout(() => {
-          document.getElementById('verifyPanel').classList.add('hidden');
-          document.getElementById('passFoot').classList.remove('hidden');
-          const btn = document.getElementById('checkinBtn');
-          btn.disabled = false;
-          btn.textContent = 'Check In';
-        }, 3500);
-      }
-    }
-  } catch(e) { console.warn('Poll error:', e); }
 }
 
 function triggerConfetti(){
@@ -876,7 +1208,7 @@ async function confirmBooking(){
     if (!res.ok) throw new Error(data.error || 'Failed to submit booking');
 
     showToast(`Booking request for ${selectedRoomName} submitted! Pending Admin Approval.`);
-    showTab('home');
+    showTab('history');
   } catch(e) {
     showToast(e.message);
   }
