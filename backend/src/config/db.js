@@ -28,13 +28,26 @@ const connectDB = async () => {
   const useMemoryDb = process.env.USE_MEMORY_DB === 'true' || uri === 'memory' || !uri;
 
 
+  if (useMemoryDb) {
+    try {
+      console.log('ℹ️ Initializing MongoMemoryServer...');
+      mongoServer = await MongoMemoryServer.create();
+      const memoryUri = mongoServer.getUri();
+      await mongoose.connect(memoryUri);
+      console.log(`✅ MongoDB Memory Server connected at: ${memoryUri}`);
+      await seedInitialData();
+      return;
+    } catch (memErr) {
+      console.error('❌ Failed to start MongoMemoryServer:', memErr.message);
+      process.exit(1);
+    }
+  }
+
   try {
     const conn = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 2000,
     });
-
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-
     await seedInitialData();
   } catch (err) {
     console.log(`ℹ️ External MongoDB connection unavailable (${err.message}). Starting MongoMemoryServer fallback...`);

@@ -9,6 +9,7 @@ import Devices from './pages/Devices';
 import Reports from './pages/Reports';
 import AttendanceQR from './pages/AttendanceQR';
 import AttendanceForm from './pages/AttendanceForm';
+import IacMobile from './pages/IacMobile';
 import Login from './pages/Login';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="devices" element={<Devices />} />
           <Route path="reports" element={<Reports />} />
           <Route path="attendance-qr" element={<AttendanceQR />} />
+          <Route path="iac-mobile" element={<IacMobile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

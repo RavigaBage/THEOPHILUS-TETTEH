@@ -1,6 +1,6 @@
 
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Coffee, MonitorPlay, ServerCrash, FileBarChart2, Activity, QrCode } from 'lucide-react';
+import { LayoutDashboard, Coffee, MonitorPlay, ServerCrash, FileBarChart2, Activity, QrCode, Smartphone } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -15,6 +15,7 @@ const navItems = [
   { name: 'Devices', path: '/devices', icon: ServerCrash },
   { name: 'Reports', path: '/reports', icon: FileBarChart2 },
   { name: 'QR Attendance', path: '/attendance-qr', icon: QrCode },
+  { name: 'Iac Mobile', path: '/iac-mobile', icon: Smartphone },
 ];
 
 export default function DashboardLayout() {
