@@ -1,0 +1,26 @@
+{
+  "name": "iacproject",
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "Agent",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "start": "npm run start --workspace=backend",
+    "build": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  },
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "exceljs": "^4.4.0",
+    "fuse.js": "^7.5.0",
+    "mongodb-memory-server": "^11.2.0",
+    "recharts": "^3.10.1",
+    "vite": "8.1.5"
+  }
+}
