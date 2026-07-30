@@ -52,6 +52,9 @@ app.use('/api/public', require('./src/routes/public'));
 app.use('/api', createProtectedRoutes(commandService));
 const { protect } = require('./src/middleware/auth');
 app.use('/uploads', protect, express.static(path.join(__dirname, 'uploads')));
+app.use('/IACMOBILE APP', express.static(path.join(__dirname, '../IACMOBILE APP')));
+app.use('/iacmobile-app', express.static(path.join(__dirname, '../IACMOBILE APP')));
+app.use('/attendanceForm', express.static(path.join(__dirname, '../attendanceForm')));
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));

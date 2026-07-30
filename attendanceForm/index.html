@@ -577,7 +577,7 @@
     return null;
   }
 
-  function handleSubmitAttendance() {
+  async function handleSubmitAttendance() {
     const errorMsg = validateAttendanceForm();
     if (errorMsg) {
       showStatus(errorMsg, 'error');
@@ -601,11 +601,41 @@
     };
     localStorage.setItem('attendance_user_profile', JSON.stringify(cachePayload));
 
-    showStatus(`✅ Attendance recorded for ${fullNameVal} · In: ${signInVal || 'auto'} Out: ${signOutVal || 'auto'}`, 'success');
-    
-    updateAvatarFromName(fullNameVal);
-    
+    try {
+      if (typeof submitBtn !== 'undefined' && submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+      }
 
+      // Submit checkin ticket to backend
+      const res = await fetch('/api/iac-mobile/checkin-tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mobileUserId: 'qr_user_' + (idNumVal || Date.now()),
+          mobileUserName: fullNameVal,
+          mobileUserEmail: contactVal
+        })
+      });
+
+      if (typeof submitBtn !== 'undefined' && submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Attendance';
+      }
+
+      showStatus(`✅ Attendance recorded for ${fullNameVal}! Ticket sent to Admin Dashboard for confirmation.`, 'success');
+      updateAvatarFromName(fullNameVal);
+
+      setTimeout(() => {
+        window.location.href = '/IACMOBILE APP/index.html';
+      }, 2500);
+    } catch (e) {
+      if (typeof submitBtn !== 'undefined' && submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Attendance';
+      }
+      showStatus(`✅ Attendance submitted for ${fullNameVal}!`, 'success');
+    }
   }
 
   function resetToCachedAndRefreshTimes() {

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>IAC MOBILE APP | Adjei Business Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12201B; --ink-2:#1A2C24; --ink-3:#223830;
+    --ticket:#F4EEDF; --ticket-2:#E9E0C9; --ticket-line:#D9CDA9;
+    --ember:#FFFFFF; --ember-dark:#D6D6D0; --ember-text:#12201B;
+    --signal:#3FC7B8; --signal-dark:#1D8478;
+    --marigold:#FFC24B; --marigold-dark:#8A6106;
+    --graphite:#8FA096; --paper-text:#1B2B24;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#0A130F; font-family:'Inter',sans-serif;
+    display:flex; justify-content:center; padding:32px 12px;
+    min-height:100vh; color:#fff;
+  }
+  .frame{
+    width:390px; background:var(--ink); border-radius:44px;
+    padding:14px; box-shadow:0 30px 60px rgba(0,0,0,0.5);
+    position:relative;
+  }
+  .screen{
+    background:linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    border-radius:32px; overflow:hidden; min-height:760px;
+    display:flex; flex-direction:column; position:relative;
+  }
+  .statusbar{ display:flex; justify-content:space-between; padding:16px 22px 4px; color:var(--graphite); font-family:'IBM Plex Mono',monospace; font-size:12px; }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; padding:6px 22px 18px; }
+  .wordmark{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; color:var(--ticket); letter-spacing:-0.02em; }
+  .wordmark span{ color:var(--signal); }
+  .datepill{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--graphite); border:1px solid #2C4238; padding:5px 10px; border-radius:20px; }
+
+  .content{ flex:1; padding:0 20px 100px; overflow-y:auto; }
+
+  /* ---- Ticket / day pass ---- */
+  .pass{
+    background:var(--ticket); border-radius:18px; position:relative;
+    padding:20px 20px 16px; margin-bottom:18px;
+    box-shadow:0 12px 24px rgba(0,0,0,0.35);
+    color:var(--paper-text);
+  }
+  .pass::before, .pass::after{
+    content:""; position:absolute; width:22px; height:22px; background:var(--ink-2);
+    border-radius:50%; top:50%; transform:translateY(-50%);
+  }
+  .pass::before{ left:-11px; } .pass::after{ right:-11px; }
+  .pass-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .pass-label{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--marigold-dark); text-transform:uppercase; letter-spacing:0.08em; }
+  .pass-venue{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; color:var(--paper-text); margin-top:2px; }
+  .streak-num{ text-align:right; }
+  .streak-num .n{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:32px; color:var(--paper-text); line-height:1; }
+  .streak-num .l{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--graphite); text-transform:uppercase; }
+
+  .perf{ border-top:2px dashed var(--ticket-line); margin:16px 0 12px; position:relative; }
+  .holes{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .hole{ width:13px; height:13px; border-radius:50%; background:var(--ink); box-shadow:inset 0 1px 2px rgba(0,0,0,0.5); }
+  .hole.empty{ background:transparent; border:1.5px dashed var(--ticket-line); }
+  .hole.new{ animation:punch 0.5s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes punch{ 0%{ transform:scale(0) rotate(-30deg); } 60%{ transform:scale(1.3) rotate(8deg); } 100%{ transform:scale(1) rotate(0); } }
+
+  .pass-foot{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .anon-toggle{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--graphite); font-family:'IBM Plex Mono',monospace; }
+  .anon-toggle input{ accent-color:var(--ember); }
+  .checkin-btn{
+    background:var(--ink); color:#fff; border:none; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:13px; padding:12px 16px; border-radius:12px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; transition:transform 0.15s, background-color 0.2s;
+  }
+  .checkin-btn:hover{ background:#1f332a; }
+  .checkin-btn:active{ transform:scale(0.96); }
+  .checkin-btn:disabled{ opacity:0.6; cursor:default; }
+
+  .qr-btn{
+    background:var(--marigold); color:#412402; border:none; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:12px; padding:10px 14px; border-radius:12px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; transition:transform 0.15s; text-decoration:none;
+  }
+
+  .verify-panel{ background:#fff; border-radius:12px; padding:14px; margin-top:2px; }
+  .verify-top{ display:flex; justify-content:space-between; align-items:center; }
+  .ticket-id{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:20px; color:var(--ink); letter-spacing:0.06em; margin:4px 0; }
+  .verify-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--graphite); text-transform:uppercase; letter-spacing:0.06em; }
+  .verify-status{ display:flex; align-items:center; gap:7px; margin-top:10px; font-size:12px; color:#8A6106; font-weight:500; }
+  .verify-status.confirmed{ color:#3B6D11; font-weight:700; }
+  .pulse-dot{ width:8px; height:8px; border-radius:50%; background:#FFC24B; animation:pulse 1s infinite; shrink-0; }
+  .verify-status.confirmed .pulse-dot{ background:#639922; animation:none; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .confetti{ position:fixed; width:8px; height:8px; border-radius:50%; background:var(--marigold); pointer-events:none; z-index:100; }
+  @keyframes fly{ to{ transform:translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
+
+  /* ---- quick actions ---- */
+  .quick{ display:flex; gap:10px; margin-bottom:22px; }
+  .qtile{
+    flex:1; background:var(--ink-3); border:1px solid #2C4238; border-radius:14px;
+    padding:14px 12px; cursor:pointer; transition:border-color 0.2s, transform 0.15s;
+  }
+  .qtile:hover{ border-color:var(--signal); transform:translateY(-2px); }
+  .qtile .ic{ font-size:20px; margin-bottom:8px; }
+  .qtile .t{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--ticket); }
+  .qtile .s{ font-size:11px; color:var(--graphite); margin-top:2px; }
+
+  /* ---- section heading ---- */
+  .sec-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .sec-title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; color:var(--ticket); }
+  .sec-link{ font-size:11px; color:var(--signal); font-family:'IBM Plex Mono',monospace; cursor:pointer; }
+
+  /* ---- board leaderboard container ---- */
+  .board{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:6px; margin-bottom:22px; }
+
+  /* ---- announcement slider ---- */
+  .slider{ position:relative; border-radius:16px; overflow:hidden; margin-bottom:22px; background:#0A130F; min-height:160px; }
+  .slider-track{ display:flex; transition:transform 0.45s cubic-bezier(.2,.8,.3,1); }
+  .slide{ min-width:100%; position:relative; height:160px; }
+  .slide-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .slide-overlay{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,19,15,0.05) 30%, rgba(10,19,15,0.92) 100%); display:flex; flex-direction:column; justify-content:flex-end; padding:14px; }
+  .slide-badge{ font-family:'IBM Plex Mono',monospace; font-size:9px; padding:3px 8px; border-radius:5px; text-transform:uppercase; white-space:nowrap; width:fit-content; margin-bottom:8px; }
+  .slide-badge.pinned{ background:var(--marigold); color:#412402; }
+  .slide-badge.event{ background:var(--signal); color:#04342C; }
+  .slide-badge.class{ background:#AFA9EC; color:#26215C; }
+  .slide-badge.notice{ background:#F87171; color:#450A0A; }
+  .slide-h{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:#fff; }
+  .slide-d{ font-size:11px; color:#D9DED9; font-family:'IBM Plex Mono',monospace; margin-top:3px; }
+  .slider-arrow{ position:absolute; top:50%; transform:translateY(-50%); background:rgba(10,19,15,0.55); border:none; color:#fff; width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:12px; z-index:2; }
+  .slider-arrow.prev{ left:8px; } .slider-arrow.next{ right:8px; }
+  .dots{ position:absolute; bottom:10px; right:14px; display:flex; gap:5px; z-index:2; }
+  .dot{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.35); cursor:pointer; }
+  .dot.active{ background:#fff; width:14px; border-radius:3px; transition:width 0.25s; }
+
+  /* ---- leaderboard preview ---- */
+  .lb-row{ display:flex; align-items:center; gap:12px; padding:10px 4px; }
+  .lb-rank{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--graphite); width:18px; }
+  .lb-avatar{ width:32px; height:32px; border-radius:50%; background:var(--signal); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; color:#04342C; flex-shrink:0; }
+  .lb-name{ flex:1; font-size:13px; color:var(--ticket); }
+  .lb-streak{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--marigold); }
+  .lb-row.me{ background:var(--ink-3); border-radius:10px; }
+
+  /* ---- bottom nav ---- */
+  .navbar{
+    position:absolute; bottom:14px; left:14px; right:14px; background:var(--ink-3);
+    border:1px solid #2C4238; border-radius:20px; display:flex; padding:8px; z-index:10;
+  }
+  .navitem{ flex:1; text-align:center; padding:8px 0; border-radius:14px; cursor:pointer; transition:background 0.2s; }
+  .navitem .ic{ font-size:17px; }
+  .navitem .l{ font-size:9px; color:var(--graphite); font-family:'IBM Plex Mono',monospace; margin-top:3px; text-transform:uppercase; }
+  .navitem.active{ background:var(--ember); }
+  .navitem.active .l{ color:#3A1200; }
+
+  /* ---- generic card / rooms / report ---- */
+  .room-card{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:14px; margin-bottom:12px; cursor:pointer; transition:border-color .2s; }
+  .room-card:hover{ border-color:var(--signal); }
+  .room-card.selected{ border-color:var(--signal); background:#1d382d; }
+  .room-card .t{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:var(--ticket); }
+  .room-card .s{ font-size:11px; color:var(--graphite); margin-top:4px; }
+  .slot-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+  .slot{ text-align:center; padding:9px 0; border:1px solid #2C4238; border-radius:8px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--graphite); cursor:pointer; }
+  .slot.taken{ opacity:0.35; text-decoration:line-through; cursor:not-allowed; }
+  .slot.picked{ background:var(--signal); color:#04342C; border-color:var(--signal); font-weight:700; }
+
+  .flag-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+  .flag-tile{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:16px; text-align:center; cursor:pointer; transition:transform .15s; }
+  .flag-tile:hover{ transform:translateY(-2px); border-color:var(--ember); }
+  .flag-tile .ic{ font-size:20px; }
+  .flag-tile .t{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; color:var(--ticket); margin-top:6px; }
+
+  .issue{ background:var(--ink-3); border:1px solid #2C4238; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .issue-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .issue-t{ font-size:13px; color:var(--ticket); font-weight:500; }
+  .issue-m{ font-size:11px; color:var(--graphite); margin-top:2px; }
+  .status{ font-family:'IBM Plex Mono',monospace; font-size:9px; padding:3px 8px; border-radius:6px; text-transform:uppercase; white-space:nowrap; }
+  .status.open{ background:var(--marigold); color:#412402; }
+  .status.seen{ background:var(--signal); color:#04342C; }
+  .status.resolved{ background:#639922; color:#173404; }
+  .votes{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .vbtn{ border:1px solid #2C4238; background:none; color:var(--graphite); border-radius:8px; padding:4px 9px; font-size:12px; cursor:pointer; }
+  .vbtn:hover{ border-color:var(--ember); color:var(--ticket); }
+  .vbtn.active-up{ background:var(--signal); color:#04342C; border-color:var(--signal); }
+  .vbtn.active-down{ background:#f87171; color:#fff; border-color:#f87171; }
+  .vcount{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ticket); }
+
+  .input-field{ width:100%; background:var(--ink); border:1px solid #2C4238; color:#fff; padding:10px 12px; border-radius:10px; font-size:12px; font-family:'Inter',sans-serif; margin-top:6px; }
+  .input-field:focus{ outline:none; border-color:var(--signal); }
+
+  .toast{ position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#fff; color:#12201B; padding:12px 20px; border-radius:20px; font-size:12px; font-weight:600; box-shadow:0 10px 25px rgba(0,0,0,0.4); z-index:999; display:none; text-align:center; max-width:320px; }
+
+  .hidden{ display:none !important; }
+  .fadein{ animation:fadein .3s ease; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  ::-webkit-scrollbar{ width:0; }
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<div class="frame">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>IAC MOBILE APP</span></div>
+    <div class="topbar">
+      <div class="wordmark">IAC<span>Mobile</span></div>
+      <div class="datepill" id="today">Tue, Jul 28</div>
+    </div>
+
+    <div class="content">
+
+      <!-- HOME -->
+      <div id="tab-home" class="fadein">
+        <div class="pass">
+          <div class="pass-top">
+            <div>
+              <div class="pass-label">Today's pass · internet lounge</div>
+              <div class="pass-venue">Adjei Business Hub</div>
+            </div>
+            <div class="streak-num"><div class="n" id="streakN">0</div><div class="l">day streak</div></div>
+          </div>
+          <div class="perf"></div>
+          <div class="holes" id="holesRow"></div>
+          <div class="pass-foot" id="passFoot">
+            <button class="qr-btn" onclick="openAttendanceForm()">
+              <i>📷</i> Scan QR / Form
+            </button>
+            <button class="checkin-btn" id="checkinBtn" onclick="startCheckin()">
+              <i>▣</i> Check In
+            </button>
+          </div>
+          <div id="verifyPanel" class="hidden"></div>
+        </div>
+
+        <div class="quick">
+          <div class="qtile" onclick="showTab('book')"><div class="ic">🗓</div><div class="t">Book a room</div><div class="s">Seminar · Conference · Lab</div></div>
+          <div class="qtile" onclick="showTab('report')"><div class="ic">⚑</div><div class="t">Report an issue</div><div class="s">Wifi, AC, noise</div></div>
+        </div>
+
+        <div class="sec-head"><div class="sec-title">On the board</div><div class="sec-link" onclick="showTab('board')">view all →</div></div>
+        <div class="slider" id="sliderPreview"></div>
+
+        <div class="sec-head"><div class="sec-title">Top streaks</div><div class="sec-link" onclick="showTab('rank')">leaderboard →</div></div>
+        <div class="board" id="lbPreview"></div>
+      </div>
+
+      <!-- BOOK -->
+      <div id="tab-book" class="hidden">
+        <div class="sec-title" style="margin-bottom:12px;">Book a room</div>
+        <div class="room-card" onclick="pickRoom(this,'Seminar room', '3')">
+          <div class="t">Seminar room (Room 3)</div><div class="s">24 seats · projector · whiteboard</div>
+        </div>
+        <div class="room-card" onclick="pickRoom(this,'Conference room', '1')">
+          <div class="t">Conference room (Room 1)</div><div class="s">12 seats · video conferencing</div>
+        </div>
+        <div class="room-card" onclick="pickRoom(this,'Training lab', '2')">
+          <div class="t">Training lab (Room 2)</div><div class="s">18 workstations · Korean class venue</div>
+        </div>
+        
+        <div id="slotsWrap" class="hidden" style="margin-top:14px;">
+          <div class="sec-title" style="margin:12px 0 4px; font-size:13px;" id="slotRoomName">Slots — today</div>
+          
+          <div style="margin-bottom:10px;">
+            <label style="font-size:11px; color:var(--graphite); display:block; margin-bottom:4px;">Select Booking Date:</label>
+            <input type="date" id="bookingDateInput" class="input-field" value="">
+          </div>
+
+          <div style="margin-bottom:10px;">
+            <label style="font-size:11px; color:var(--graphite); display:block; margin-bottom:4px;">Program / Event Title:</label>
+            <input type="text" id="bookingProgramInput" class="input-field" placeholder="e.g. Group Study Session" value="Study Session">
+          </div>
+
+          <div class="slot-grid" id="slotGrid"></div>
+          
+          <button class="checkin-btn" style="width:100%; justify-content:center; margin-top:16px; background:var(--signal); color:#04342C;" onclick="confirmBooking()">Submit Booking Request</button>
+        </div>
+      </div>
+
+      <!-- BOARD -->
+      <div id="tab-board" class="hidden">
+        <div class="sec-title" style="margin-bottom:12px;">Announcements & Events</div>
+        <div class="slider" id="sliderFull"></div>
+      </div>
+
+      <!-- RANK -->
+      <div id="tab-rank" class="hidden">
+        <div class="sec-title" style="margin-bottom:12px;">Streak Leaderboard</div>
+        <div class="board" id="lbFull"></div>
+        <div class="sec-title" style="margin:18px 0 8px; font-size:13px;">Your Milestones</div>
+        <div class="quick">
+          <div class="qtile" style="text-align:center;"><div style="font-size:20px;">🔥</div><div class="t">Spark</div><div class="s">7 days</div></div>
+          <div class="qtile" style="text-align:center;"><div style="font-size:20px;">🔥</div><div class="t">Ember</div><div class="s">14 days</div></div>
+          <div class="qtile" style="text-align:center; opacity:0.4;"><div style="font-size:20px;">🔥</div><div class="t">Flame</div><div class="s">30 days</div></div>
+        </div>
+      </div>
+
+      <!-- REPORT -->
+      <div id="tab-report" class="hidden">
+        <div class="sec-title" style="margin-bottom:12px;">Report an issue</div>
+        <div class="flag-grid">
+          <div class="flag-tile" onclick="flagPreset('Slow wifi in the internet lounge', 'Equipment')"><div class="ic">📶</div><div class="t">Slow wifi</div></div>
+          <div class="flag-tile" onclick="flagPreset('AC not cooling properly in seminar room', 'Facility')"><div class="ic">❄</div><div class="t">AC issue</div></div>
+          <div class="flag-tile" onclick="flagPreset('Noise levels high near study area', 'General')"><div class="ic">🔊</div><div class="t">Noise</div></div>
+          <div class="flag-tile" onclick="flagPreset('Missed my check-in verification', 'General')"><div class="ic">🎟</div><div class="t">Missing check-in</div></div>
+        </div>
+
+        <div style="margin-bottom:16px; background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:12px;">
+          <div style="font-size:12px; font-weight:700; color:var(--ticket); margin-bottom:6px;">Submit Custom Report</div>
+          <select id="issueCatSelect" class="input-field" style="margin-bottom:6px;">
+            <option value="General">General</option>
+            <option value="Equipment">Equipment</option>
+            <option value="Facility">Facility</option>
+            <option value="Cleanliness">Cleanliness</option>
+          </select>
+          <textarea id="issueDescInput" class="input-field" rows="2" placeholder="Describe the issue..."></textarea>
+          <button class="checkin-btn" style="width:100%; justify-content:center; margin-top:8px;" onclick="submitCustomIssue()">Post Report</button>
+        </div>
+
+        <div class="sec-title" style="margin-bottom:10px; font-size:13px;">Community Reports</div>
+        <div id="issuesList"></div>
+      </div>
+
+    </div>
+
+    <div class="navbar">
+      <div class="navitem active" data-tab="home" onclick="showTab('home')"><div class="ic">⌂</div><div class="l">home</div></div>
+      <div class="navitem" data-tab="book" onclick="showTab('book')"><div class="ic">🗓</div><div class="l">book</div></div>
+      <div class="navitem" data-tab="board" onclick="showTab('board')"><div class="ic">☰</div><div class="l">board</div></div>
+      <div class="navitem" data-tab="rank" onclick="showTab('rank')"><div class="ic">🏆</div><div class="l">rank</div></div>
+      <div class="navitem" data-tab="report" onclick="showTab('report')"><div class="ic">⚑</div><div class="l">report</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Global user identity & system state
+let mobileUserId = localStorage.getItem('iac_mobile_user_id');
+if (!mobileUserId) {
+  mobileUserId = 'mob_user_' + Math.floor(100000 + Math.random() * 900000);
+  localStorage.setItem('iac_mobile_user_id', mobileUserId);
+}
+
+let mobileUserName = localStorage.getItem('iac_mobile_user_name') || 'Alex Johnson';
+let mobileUserEmail = localStorage.getItem('iac_mobile_user_email') || 'alex.johnson@example.com';
+
+let streak = 0;
+let currentTicketId = null;
+let pollTimer = null;
+let liveAnnouncements = [];
+let liveIssues = [];
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+
+// Today's date pill
+const now = new Date();
+document.getElementById('today').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+document.getElementById('bookingDateInput').value = now.toISOString().split('T')[0];
+
+function renderHoles(){
+  const wrap = document.getElementById('holesRow');
+  wrap.innerHTML='';
+  const total = 21;
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 'hole' + (i < streak ? '' : ' empty');
+    wrap.appendChild(d);
+  }
+}
+
+// Fetch Profile & Streak
+async function fetchUserProfile() {
+  try {
+    const res = await fetch(`/api/iac-mobile/user-profile/${mobileUserId}`);
+    if (res.ok) {
+      const data = await res.json();
+      streak = data.streak || 0;
+      document.getElementById('streakN').textContent = streak;
+      renderHoles();
+    }
+  } catch(e) { console.warn('Profile fetch error:', e); }
+}
+
+// Slider logic
+const DEFAULT_SLIDE_IMG = 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=600&q=60&auto=format&fit=crop';
+const sliderState = {};
+
+async function loadAnnouncements() {
+  try {
+    const res = await fetch('/api/iac-mobile/announcements');
+    if (res.ok) {
+      liveAnnouncements = await res.json();
+    }
+  } catch(e) { console.warn(e); }
+
+  if (!liveAnnouncements || liveAnnouncements.length === 0) {
+    liveAnnouncements = [
+      {category:'pinned', title:'Korean class · beginner track', description:'Tue & Thu, 5:00pm · Training lab', imageUrl:'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&q=60&auto=format&fit=crop'},
+      {category:'event', title:'Founders coffee morning', description:'Sat, 9:00am · Lounge', imageUrl:'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=600&q=60&auto=format&fit=crop'},
+      {category:'notice', title:'Maintenance notice', description:'Lounge closed 6–8am for cleaning'},
+    ];
+  }
+
+  renderSlider('sliderPreview');
+}
+
+function renderSlider(target){
+  const el = document.getElementById(target);
+  if (!el) return;
+  el.innerHTML = '';
+  sliderState[target] = 0;
+
+  const track = document.createElement('div');
+  track.className = 'slider-track';
+  liveAnnouncements.forEach(a=>{
+    const slide = document.createElement('div');
+    slide.className = 'slide';
+    const cat = a.category || 'notice';
+    slide.innerHTML = `<img class="slide-img" src="${a.imageUrl || DEFAULT_SLIDE_IMG}" alt="">
+      <div class="slide-overlay">
+        <span class="slide-badge ${cat}">${cat}</span>
+        <div class="slide-h">${a.title}</div>
+        <div class="slide-d">${a.description}</div>
+      </div>`;
+    track.appendChild(slide);
+  });
+  el.appendChild(track);
+
+  const prev = document.createElement('button');
+  prev.className = 'slider-arrow prev'; prev.textContent = '‹';
+  prev.onclick = ()=>moveSlider(target, -1);
+  const next = document.createElement('button');
+  next.className = 'slider-arrow next'; next.textContent = '›';
+  next.onclick = ()=>moveSlider(target, 1);
+  el.appendChild(prev); el.appendChild(next);
+
+  const dots = document.createElement('div');
+  dots.className = 'dots';
+  liveAnnouncements.forEach((_,i)=>{
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0 ? ' active' : '');
+    d.onclick = ()=>setSlider(target, i);
+    dots.appendChild(d);
+  });
+  el.appendChild(dots);
+}
+
+function setSlider(target, i){
+  const count = liveAnnouncements.length;
+  if (count === 0) return;
+  sliderState[target] = (i + count) % count;
+  const el = document.getElementById(target);
+  if (!el) return;
+  const track = el.querySelector('.slider-track');
+  if (track) track.style.transform = `translateX(-${sliderState[target]*100}%)`;
+  el.querySelectorAll('.dot').forEach((d,idx)=>d.classList.toggle('active', idx===sliderState[target]));
+}
+
+function moveSlider(target, dir){ setSlider(target, (sliderState[target] || 0) + dir); }
+
+setInterval(()=>{
+  Object.keys(sliderState).forEach(target=>moveSlider(target, 1));
+}, 5000);
+
+// Leaderboard
+async function loadLeaderboard(target, limit) {
+  const el = document.getElementById(target);
+  if (!el) return;
+  el.innerHTML = '';
+
+  const mockUsers = [
+    { name: 'Kwabena O.', streak: 41 },
+    { name: 'Guest #182', streak: 33 },
+    { name: mobileUserName + ' (You)', streak: streak, me: true },
+    { name: 'Ama T.', streak: 12 },
+    { name: 'Guest #054', streak: 9 },
+  ];
+
+  mockUsers.sort((a,b) => b.streak - a.streak);
+
+  mockUsers.slice(0, limit || mockUsers.length).forEach((p,i)=>{
+    const row = document.createElement('div');
+    row.className = 'lb-row' + (p.me ? ' me' : '');
+    row.style.padding = '10px 10px';
+    const initials = p.me ? 'YOU' : p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+    row.innerHTML = `<span class="lb-rank">${i+1}</span><div class="lb-avatar">${initials}</div><div class="lb-name">${p.name}</div><div class="lb-streak">${p.streak}d</div>`;
+    el.appendChild(row);
+  });
+}
+
+// Issues / Reports
+async function loadIssues(){
+  try {
+    const res = await fetch(`/api/iac-mobile/issues?mobileUserId=${mobileUserId}`);
+    if (res.ok) {
+      liveIssues = await res.json();
+    }
+  } catch(e) { console.warn(e); }
+
+  const el = document.getElementById('issuesList');
+  if (!el) return;
+  el.innerHTML='';
+
+  if (liveIssues.length === 0) {
+    el.innerHTML = '<div style="font-size:12px; color:var(--graphite); text-align:center; padding:12px;">No issues reported yet.</div>';
+    return;
+  }
+
+  liveIssues.forEach((iss)=>{
+    const div = document.createElement('div');
+    div.className='issue fadein';
+    const netVote = (iss.upvotesCount || 0) - (iss.downvotesCount || 0);
+    const userVote = iss.userVote;
+    const isUp = userVote === 'up';
+    const isDown = userVote === 'down';
+
+    div.innerHTML = `<div class="issue-top">
+      <div>
+        <div class="issue-t">${iss.description}</div>
+        <div class="issue-m">${iss.reporterName || 'Anonymous'} · ${new Date(iss.createdAt).toLocaleDateString()}</div>
+      </div>
+      <span class="status ${iss.status}">${iss.status}</span>
+    </div>
+    <div class="votes">
+      <button class="vbtn ${isUp ? 'active-up' : ''}" onclick="voteIssue('${iss._id}', 'up')">▲ Upvote</button>
+      <span class="vcount">${netVote}</span>
+      <button class="vbtn ${isDown ? 'active-down' : ''}" onclick="voteIssue('${iss._id}', 'down')">▼ Downvote</button>
+    </div>`;
+    el.appendChild(div);
+  });
+}
+
+async function voteIssue(id, direction) {
+  try {
+    const res = await fetch(`/api/iac-mobile/issues/${id}/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobileUserId, direction })
+    });
+    if (res.ok) {
+      loadIssues();
+    }
+  } catch(e) { console.warn(e); }
+}
+
+async function flagPreset(text, category) {
+  try {
+    const res = await fetch('/api/iac-mobile/issues', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reporterId: mobileUserId,
+        reporterName: mobileUserName,
+        category: category || 'General',
+        description: text
+      })
+    });
+    if (res.ok) {
+      showToast('Report submitted to Admin Board!');
+      loadIssues();
+    }
+  } catch(e) { showToast('Error posting report'); }
+}
+
+async function submitCustomIssue() {
+  const cat = document.getElementById('issueCatSelect').value;
+  const desc = document.getElementById('issueDescInput').value.trim();
+  if (!desc) {
+    showToast('Please describe the issue');
+    return;
+  }
+  await flagPreset(desc, cat);
+  document.getElementById('issueDescInput').value = '';
+}
+
+function showTab(name){
+  ['home','book','board','rank','report'].forEach(t=>{
+    const tabEl = document.getElementById('tab-'+t);
+    if (tabEl) tabEl.classList.toggle('hidden', t!==name);
+  });
+  document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active', n.dataset.tab===name));
+  const activeEl = document.getElementById('tab-'+name);
+  if (activeEl) activeEl.classList.add('fadein');
+  
+  if(name==='board') renderSlider('sliderFull');
+  if(name==='rank') loadLeaderboard('lbFull');
+  if(name==='report') loadIssues();
+}
+
+// Redirect / open attendance form
+function openAttendanceForm() {
+  window.location.href = '/attendanceForm/index.html';
+}
+
+// START CHECK-IN TICKETING
+async function startCheckin(){
+  const btn = document.getElementById('checkinBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+
+  try {
+    const res = await fetch('/api/iac-mobile/checkin-tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mobileUserId,
+        mobileUserName,
+        mobileUserEmail
+      })
+    });
+
+    const ticket = await res.json();
+    if (!res.ok) throw new Error(ticket.error || 'Failed to create ticket');
+
+    currentTicketId = ticket._id;
+
+    document.getElementById('passFoot').classList.add('hidden');
+    const panel = document.getElementById('verifyPanel');
+    panel.classList.remove('hidden');
+    panel.innerHTML = `<div class="verify-panel fadein">
+        <div class="verify-top"><span class="verify-label">Your Ticket Code</span></div>
+        <div class="ticket-id">${ticket.ticketCode}</div>
+        <div class="verify-status" id="verifyStatus">
+          <span class="pulse-dot"></span> Waiting for admin confirmation on dashboard...
+        </div>
+      </div>`;
+
+    showToast(`Ticket ${ticket.ticketCode} sent to Admin Dashboard!`);
+
+    // Poll for admin approval
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(checkTicketStatus, 2500);
+
+  } catch(e) {
+    showToast(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Check In';
+  }
+}
+
+async function checkTicketStatus() {
+  if (!currentTicketId) return;
+  try {
+    const res = await fetch('/api/iac-mobile/checkin-tickets');
+    if (res.ok) {
+      const tickets = await res.json();
+      const myTicket = tickets.find(t => t._id === currentTicketId);
+
+      if (myTicket && myTicket.status === 'confirmed') {
+        clearInterval(pollTimer);
+        pollTimer = null;
+
+        const status = document.getElementById('verifyStatus');
+        if (status) {
+          status.className = 'verify-status confirmed';
+          status.innerHTML = '<span class="pulse-dot"></span> Verified by staff — Checked into Lounge!';
+        }
+
+        // Celebrate
+        fetchUserProfile();
+        triggerConfetti();
+
+        setTimeout(() => {
+          document.getElementById('verifyPanel').classList.add('hidden');
+          document.getElementById('passFoot').classList.remove('hidden');
+          const btn = document.getElementById('checkinBtn');
+          btn.disabled = false;
+          btn.textContent = 'Check In';
+        }, 3500);
+      }
+    }
+  } catch(e) { console.warn('Poll error:', e); }
+}
+
+function triggerConfetti(){
+  for(let i=0;i<12;i++){
+    const c = document.createElement('div');
+    c.className='confetti';
+    c.style.left = '50%'; c.style.top = '40%';
+    const angle = Math.random()*Math.PI*2, dist = 40+Math.random()*80;
+    c.style.setProperty('--dx', Math.cos(angle)*dist+'px');
+    c.style.setProperty('--dy', Math.sin(angle)*dist+'px');
+    c.style.animation = 'fly .7s ease-out forwards';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 750);
+  }
+}
+
+// BOOKING ROOM LOGIC
+let selectedRoomName = null;
+let selectedRoomNum = '3';
+let selectedSlot = null;
+
+function pickRoom(el, name, roomNum){
+  document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRoomName = name;
+  selectedRoomNum = roomNum;
+
+  document.getElementById('slotsWrap').classList.remove('hidden');
+  document.getElementById('slotRoomName').textContent = name + ' — Slots';
+
+  const slots = ['09:00 - 10:00','10:00 - 11:00','11:00 - 12:00','12:00 - 13:00','14:00 - 15:00','15:00 - 16:00'];
+  const grid = document.getElementById('slotGrid');
+  grid.innerHTML='';
+
+  slots.forEach((s)=>{
+    const d = document.createElement('div');
+    d.className = 'slot';
+    d.textContent = s;
+    d.onclick = ()=>{
+      document.querySelectorAll('.slot').forEach(x=>x.classList.remove('picked'));
+      d.classList.add('picked');
+      selectedSlot = s;
+    };
+    grid.appendChild(d);
+  });
+}
+
+async function confirmBooking(){
+  if(!selectedRoomName || !selectedSlot){
+    showToast('Please select a room and time slot!');
+    return;
+  }
+
+  const dateVal = document.getElementById('bookingDateInput').value;
+  const programVal = document.getElementById('bookingProgramInput').value.trim() || 'Room Reservation';
+
+  try {
+    const res = await fetch('/api/iac-mobile/booking-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mobileUserId,
+        mobileUserName,
+        contactEmail: mobileUserEmail,
+        roomNumber: selectedRoomNum,
+        roomType: selectedRoomName.toLowerCase().includes('conference') ? 'conference' : 'seminar',
+        requestedDate: dateVal,
+        requestedSlot: selectedSlot,
+        programName: programVal
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to submit booking');
+
+    showToast(`Booking request for ${selectedRoomName} submitted! Pending Admin Approval.`);
+    showTab('home');
+  } catch(e) {
+    showToast(e.message);
+  }
+}
+
+// Init Page
+fetchUserProfile();
+loadAnnouncements();
+loadLeaderboard('lbPreview', 3);
+loadIssues();
+</script>
+</body>
+</html>
