@@ -187,6 +187,57 @@ router.post('/auth/logout', verifyMobileToken, async (req, res) => {
   }
 });
 
+// Helper function to update/calculate streak accurately
+async function calculateAndApplyStreak(mobileUserId, userName = '', userEmail = '') {
+  let profile = await MobileUserProfile.findOne({ mobileUserId });
+  if (!profile) {
+    profile = new MobileUserProfile({
+      mobileUserId,
+      name: userName || 'Mobile Member',
+      email: userEmail || `${mobileUserId}@example.com`,
+      streak: 0,
+      longestStreak: 0,
+      totalCheckins: 0,
+    });
+  }
+
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+
+  if (!profile.lastCheckinDate) {
+    profile.streak = 1;
+    profile.longestStreak = Math.max(profile.longestStreak || 0, 1);
+    profile.totalCheckins = (profile.totalCheckins || 0) + 1;
+    profile.lastCheckinDate = now;
+    await profile.save();
+    return profile;
+  }
+
+  const lastDate = new Date(profile.lastCheckinDate);
+  const lastStr = lastDate.toISOString().split('T')[0];
+
+  if (todayStr === lastStr) {
+    // Same day checkin
+    if (profile.streak === 0) profile.streak = 1;
+  } else {
+    const utc1 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const utc2 = Date.UTC(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+    const diffDays = Math.floor((utc1 - utc2) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      profile.streak = (profile.streak || 0) + 1;
+    } else {
+      profile.streak = 1;
+    }
+  }
+
+  profile.totalCheckins = (profile.totalCheckins || 0) + 1;
+  profile.longestStreak = Math.max(profile.longestStreak || 0, profile.streak);
+  profile.lastCheckinDate = now;
+  await profile.save();
+  return profile;
+}
+
 // -------------------------------------------------------------
 // 1. CHECK-IN TICKETS
 // -------------------------------------------------------------
@@ -194,8 +245,10 @@ router.post('/auth/logout', verifyMobileToken, async (req, res) => {
 // Get all checkin tickets (Admin or mobile queue)
 router.get('/checkin-tickets', async (req, res) => {
   try {
-    const { status } = req.query;
-    const filter = status ? { status } : {};
+    const { status, mobileUserId } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (mobileUserId) filter.mobileUserId = mobileUserId;
     const tickets = await CheckinTicket.find(filter).sort({ createdAt: -1 });
     res.json(tickets);
   } catch (err) {
@@ -203,12 +256,81 @@ router.get('/checkin-tickets', async (req, res) => {
   }
 });
 
-// Create checkin ticket (Mobile user action)
+// Check today's check-in status for a specific user
+router.get('/checkin-tickets/today/:mobileUserId', async (req, res) => {
+  try {
+    const { mobileUserId } = req.params;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const ticket = await CheckinTicket.findOne({
+      mobileUserId,
+      $or: [
+        { requestedAt: { $gte: todayStart, $lte: todayEnd } },
+        { confirmedAt: { $gte: todayStart, $lte: todayEnd } }
+      ]
+    }).sort({ createdAt: -1 });
+
+    if (!ticket) {
+      return res.json({ checkedIn: false, ticket: null });
+    }
+
+    const isCheckedIn = (ticket.status === 'pending' || ticket.status === 'confirmed') && !ticket.checkedOutAt;
+    res.json({
+      checkedIn: isCheckedIn,
+      status: ticket.status,
+      ticket
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single checkin ticket by ID (For real-time polling)
+router.get('/checkin-tickets/:id', async (req, res) => {
+  try {
+    const ticket = await CheckinTicket.findById(req.params.id);
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+    res.json(ticket);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create checkin ticket (Mobile user action) with Duplicate Prevention
 router.post('/checkin-tickets', async (req, res) => {
   try {
     const { mobileUserId, mobileUserName, mobileUserEmail } = req.body;
     if (!mobileUserId) {
       return res.status(400).json({ error: 'mobileUserId is required' });
+    }
+
+    // Duplicate Check-in Prevention Rule: Check if user already checked in today and has not checked out
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const existingTodayTicket = await CheckinTicket.findOne({
+      mobileUserId,
+      status: { $in: ['pending', 'confirmed'] },
+      checkedOutAt: { $exists: false },
+      $or: [
+        { requestedAt: { $gte: todayStart, $lte: todayEnd } },
+        { confirmedAt: { $gte: todayStart, $lte: todayEnd } }
+      ]
+    });
+
+    if (existingTodayTicket) {
+      return res.status(400).json({
+        error: 'You are already checked in for today.',
+        ticket: existingTodayTicket,
+        alreadyCheckedIn: true
+      });
     }
 
     // Generate unique code like IAC-7892
@@ -244,7 +366,7 @@ router.post('/checkin-tickets/:id/confirm', async (req, res) => {
 
     const { staffName, identifier, identifierType, contactNumber, gender } = req.body;
 
-    // 1. Create record in existing InternetLounge collection as per single source of truth rule
+    // 1. Create record in existing InternetLounge collection
     const loungeEntry = new InternetLounge({
       name: ticket.mobileUserName || 'Mobile Visitor',
       identifier: identifier || `MOB-${ticket.ticketCode}-${Date.now().toString().slice(-4)}`,
@@ -263,36 +385,59 @@ router.post('/checkin-tickets/:id/confirm', async (req, res) => {
     ticket.confirmedBy = staffName || 'Admin Staff';
     await ticket.save();
 
-    // 3. Update MobileUserProfile streak & total checkins ONLY after lounge entry creation
-    let profile = await MobileUserProfile.findOne({ mobileUserId: ticket.mobileUserId });
-    if (!profile) {
-      profile = new MobileUserProfile({
-        mobileUserId: ticket.mobileUserId,
-        name: ticket.mobileUserName,
-        email: ticket.mobileUserEmail,
-      });
-    }
-
-    const now = new Date();
-    const lastDate = profile.lastCheckinDate ? new Date(profile.lastCheckinDate) : null;
-
-    let isConsecutiveDay = false;
-    if (lastDate) {
-      const diffTime = Math.abs(now - lastDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays === 1) isConsecutiveDay = true;
-    }
-
-    profile.streak = isConsecutiveDay ? profile.streak + 1 : 1;
-    profile.totalCheckins += 1;
-    profile.lastCheckinDate = now;
-    await profile.save();
+    // 3. Update MobileUserProfile streak & total checkins
+    const profile = await calculateAndApplyStreak(ticket.mobileUserId, ticket.mobileUserName, ticket.mobileUserEmail);
 
     res.json({
       message: 'Check-in ticket confirmed and logged to Lounge system successfully',
       ticket,
       loungeEntry,
-      userStreak: profile.streak,
+      userStreak: profile ? profile.streak : 1,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Decline checkin ticket (Admin action)
+router.post('/checkin-tickets/:id/decline', async (req, res) => {
+  try {
+    const { staffName, reason } = req.body;
+    const ticket = await CheckinTicket.findById(req.params.id);
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    ticket.status = 'declined';
+    ticket.declinedAt = new Date();
+    ticket.declinedBy = staffName || 'Admin Staff';
+    ticket.declinedReason = reason || 'Declined by administrator';
+    await ticket.save();
+
+    res.json({
+      message: 'Check-in ticket declined',
+      ticket,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Checkout user from active checkin ticket
+router.post('/checkin-tickets/:id/checkout', async (req, res) => {
+  try {
+    const ticket = await CheckinTicket.findById(req.params.id);
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    ticket.status = 'checked_out';
+    ticket.checkedOutAt = new Date();
+    await ticket.save();
+
+    res.json({
+      message: 'Checked out successfully',
+      ticket,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -797,7 +942,7 @@ router.post('/smtp-config/test', async (req, res) => {
   }
 });
 
-// Get Mobile User Profile / Streak
+// Get Mobile User Profile / Streak with accuracy verification
 router.get('/user-profile/:mobileUserId', async (req, res) => {
   try {
     let profile = await MobileUserProfile.findOne({ mobileUserId: req.params.mobileUserId });
@@ -805,11 +950,133 @@ router.get('/user-profile/:mobileUserId', async (req, res) => {
       profile = new MobileUserProfile({
         mobileUserId: req.params.mobileUserId,
         streak: 0,
+        longestStreak: 0,
         totalCheckins: 0,
       });
       await profile.save();
+    } else {
+      // Check if user missed consecutive days
+      if (profile.lastCheckinDate) {
+        const now = new Date();
+        const lastDate = new Date(profile.lastCheckinDate);
+        const utc1 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const utc2 = Date.UTC(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+        const diffDays = Math.floor((utc1 - utc2) / (1000 * 60 * 60 * 24));
+        if (diffDays > 1 && profile.streak > 0) {
+          profile.streak = 0;
+          await profile.save();
+        }
+      }
     }
     res.json(profile);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Rankings / Leaderboard Endpoint (Req 5)
+router.get('/rankings', async (req, res) => {
+  try {
+    const profiles = await MobileUserProfile.find().lean();
+    const now = new Date();
+
+    const list = profiles.map((p) => {
+      let activeStreak = p.streak || 0;
+      if (p.lastCheckinDate) {
+        const lastDate = new Date(p.lastCheckinDate);
+        const utc1 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const utc2 = Date.UTC(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+        const diffDays = Math.floor((utc1 - utc2) / (1000 * 60 * 60 * 24));
+        if (diffDays > 1) activeStreak = 0;
+      }
+      return {
+        mobileUserId: p.mobileUserId,
+        name: p.name || 'Mobile Member',
+        email: p.email || '',
+        streak: activeStreak,
+        longestStreak: p.longestStreak || activeStreak,
+        totalCheckins: p.totalCheckins || 0,
+        lastCheckinDate: p.lastCheckinDate,
+      };
+    });
+
+    list.sort((a, b) => {
+      if (b.streak !== a.streak) return b.streak - a.streak;
+      if (b.totalCheckins !== a.totalCheckins) return b.totalCheckins - a.totalCheckins;
+      return b.longestStreak - a.longestStreak;
+    });
+
+    list.forEach((item, index) => {
+      item.rank = index + 1;
+    });
+
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Alias for /rankings
+router.get('/leaderboard', async (req, res) => {
+  req.url = '/rankings';
+  return router.handle(req, res);
+});
+
+// Booking & Check-in History Portal Endpoint (Req 3)
+router.get('/history/:mobileUserId', async (req, res) => {
+  try {
+    const { mobileUserId } = req.params;
+    const tickets = await CheckinTicket.find({ mobileUserId }).lean();
+    const bookings = await MobileBookingRequest.find({ mobileUserId }).lean();
+
+    const history = [];
+
+    tickets.forEach((t) => {
+      let statusDisplay = 'Pending';
+      if (t.status === 'confirmed') statusDisplay = 'Approved';
+      else if (t.status === 'declined') statusDisplay = 'Declined';
+      else if (t.status === 'checked_out') statusDisplay = 'Checked Out';
+      else if (t.status === 'expired') statusDisplay = 'Expired';
+
+      history.push({
+        id: t._id,
+        type: 'checkin',
+        title: 'Day Pass Check-In',
+        ticketCode: t.ticketCode,
+        date: t.requestedAt || t.createdAt,
+        checkinTime: t.confirmedAt
+          ? new Date(t.confirmedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : new Date(t.requestedAt || t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        checkoutTime: t.checkedOutAt
+          ? new Date(t.checkedOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : null,
+        status: t.status,
+        statusDisplay,
+        details: 'Adjei Business Hub · Internet Lounge Access Pass',
+      });
+    });
+
+    bookings.forEach((b) => {
+      let statusDisplay = 'Pending';
+      if (b.status === 'confirmed') statusDisplay = 'Approved';
+      else if (b.status === 'rejected') statusDisplay = 'Declined';
+
+      history.push({
+        id: b._id,
+        type: 'booking',
+        title: b.programName || 'Room Reservation',
+        ticketCode: `BOOK-${b._id.toString().slice(-6).toUpperCase()}`,
+        date: b.requestedDate || b.createdAt,
+        checkinTime: b.requestedSlot,
+        checkoutTime: null,
+        status: b.status,
+        statusDisplay,
+        details: `Room ${b.roomNumber} (${b.roomType})`,
+      });
+    });
+
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
+    res.json(history);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

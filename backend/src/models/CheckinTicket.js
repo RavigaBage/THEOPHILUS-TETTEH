@@ -8,12 +8,16 @@ const checkinTicketSchema = new mongoose.Schema(
     ticketCode: { type: String, required: true, unique: true },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'expired'],
+      enum: ['pending', 'confirmed', 'declined', 'checked_out', 'expired'],
       default: 'pending',
     },
     requestedAt: { type: Date, default: Date.now },
     confirmedAt: { type: Date },
     confirmedBy: { type: String, default: '' },
+    declinedAt: { type: Date },
+    declinedBy: { type: String, default: '' },
+    declinedReason: { type: String, default: '' },
+    checkedOutAt: { type: Date },
   },
   { timestamps: true }
 );

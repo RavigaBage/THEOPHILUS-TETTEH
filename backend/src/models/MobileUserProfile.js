@@ -9,6 +9,7 @@ const mobileUserProfileSchema = new mongoose.Schema(
     password: { type: String, select: false },
     refreshToken: { type: String, select: false },
     streak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
     totalCheckins: { type: Number, default: 0 },
     lastCheckinDate: { type: Date },
   },
