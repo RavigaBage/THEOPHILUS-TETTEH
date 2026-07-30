@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Smartphone,
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
   Sparkles,
   QrCode,
   UserCheck,
+  Bell,
 } from 'lucide-react';
 
 interface CheckinTicket {
@@ -69,6 +70,7 @@ interface BookingRequest {
   roomType: string;
   requestedDate: string;
   requestedSlot: string;
+  arrivalTime?: string;
   programName: string;
   description: string;
   status: 'pending' | 'confirmed' | 'rejected';
@@ -85,10 +87,29 @@ interface SmtpForm {
   fromName: string;
 }
 
+interface AdminNotification {
+  id: string;
+  type: 'checkin' | 'booking' | 'issue';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  targetTab: 'checkins' | 'bookings' | 'issues';
+}
+
 export default function IacMobile() {
   const [activeTab, setActiveTab] = useState<
     'checkins' | 'bookings' | 'issues' | 'announcements' | 'smtp' | 'simulator'
   >('checkins');
+
+  // Notification state
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+
+  // Tracking previous data for real-time notification alerts
+  const prevTicketIdsRef = useRef<Set<string> | null>(null);
+  const prevBookingIdsRef = useRef<Set<string> | null>(null);
+  const prevIssueIdsRef = useRef<Set<string> | null>(null);
 
   // Checkin Tickets
   const [tickets, setTickets] = useState<CheckinTicket[]>([]);
@@ -146,29 +167,93 @@ export default function IacMobile() {
     setTimeout(() => setAlert(null), 5000);
   };
 
-  // Fetch Data
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  // Helper to add new notification
+  const addNotification = (
+    type: 'checkin' | 'booking' | 'issue',
+    title: string,
+    message: string,
+    targetTab: 'checkins' | 'bookings' | 'issues'
+  ) => {
+    const newNotif: AdminNotification = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+      type,
+      title,
+      message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false,
+      targetTab,
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+  };
+
+  // Fetch Data (with change detection for notifications)
+  const fetchData = useCallback(async (isManual = false) => {
+    if (isManual) setLoading(true);
     try {
       // Checkin Tickets
       const ticketRes = await fetch('/api/iac-mobile/checkin-tickets');
       if (ticketRes.ok) {
-        const data = await ticketRes.json();
-        setTickets(Array.isArray(data) ? data : []);
+        const data: CheckinTicket[] = await ticketRes.json();
+        const ticketList = Array.isArray(data) ? data : [];
+
+        if (prevTicketIdsRef.current !== null) {
+          ticketList.forEach((t) => {
+            if (t.status === 'pending' && !prevTicketIdsRef.current!.has(t._id)) {
+              addNotification(
+                'checkin',
+                'New Check-in Request',
+                `${t.mobileUserName} (${t.ticketCode}) requested lounge check-in.`,
+                'checkins'
+              );
+            }
+          });
+        }
+        prevTicketIdsRef.current = new Set(ticketList.map((t) => t._id));
+        setTickets(ticketList);
       }
 
       // Booking Requests
       const bookingRes = await fetch('/api/iac-mobile/booking-requests');
       if (bookingRes.ok) {
-        const data = await bookingRes.json();
-        setBookings(Array.isArray(data) ? data : []);
+        const data: BookingRequest[] = await bookingRes.json();
+        const bookingList = Array.isArray(data) ? data : [];
+
+        if (prevBookingIdsRef.current !== null) {
+          bookingList.forEach((b) => {
+            if (b.status === 'pending' && !prevBookingIdsRef.current!.has(b._id)) {
+              addNotification(
+                'booking',
+                'New Room Booking Request',
+                `${b.mobileUserName} requested Room ${b.roomNumber} (${b.programName}).`,
+                'bookings'
+              );
+            }
+          });
+        }
+        prevBookingIdsRef.current = new Set(bookingList.map((b) => b._id));
+        setBookings(bookingList);
       }
 
       // Issues
       const issueRes = await fetch(`/api/iac-mobile/issues?mobileUserId=${simUserId}`);
       if (issueRes.ok) {
-        const data = await issueRes.json();
-        setIssues(Array.isArray(data) ? data : []);
+        const data: Issue[] = await issueRes.json();
+        const issueList = Array.isArray(data) ? data : [];
+
+        if (prevIssueIdsRef.current !== null) {
+          issueList.forEach((i) => {
+            if (!prevIssueIdsRef.current!.has(i._id)) {
+              addNotification(
+                'issue',
+                'New Issue Report',
+                `${i.reporterName} reported: ${i.description.slice(0, 45)}...`,
+                'issues'
+              );
+            }
+          });
+        }
+        prevIssueIdsRef.current = new Set(issueList.map((i) => i._id));
+        setIssues(issueList);
       }
 
       // Announcements
@@ -195,13 +280,31 @@ export default function IacMobile() {
     } catch (err: any) {
       console.error('Error fetching IAC mobile data:', err);
     } finally {
-      setLoading(false);
+      if (isManual) setLoading(false);
     }
   }, [simUserId]);
 
+  // Real-time polling effect (5 second interval with proper cleanup)
   useEffect(() => {
-    fetchData();
+    fetchData(true);
+    const interval = setInterval(() => {
+      fetchData(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [fetchData]);
+
+  const markAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const markNotificationRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Checkin Actions
   const handleConfirmTicket = async (ticketId: string) => {
@@ -497,14 +600,87 @@ export default function IacMobile() {
           </div>
         </div>
 
-        <button
-          onClick={fetchData}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors shadow-sm self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sky-600' : 'text-zinc-500'}`} />
-          Refresh Data
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          {/* Admin Notification Center Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2.5 bg-white border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-colors shadow-sm text-zinc-600 flex items-center justify-center"
+              title="Notification Center"
+            >
+              <Bell className="w-5 h-5 text-zinc-700" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-bounce shadow-sm">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown Drawer */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white border border-zinc-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div className="p-3.5 bg-zinc-900 text-white flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-sky-400" />
+                    <span className="font-semibold text-sm">Notifications ({unreadCount} unread)</span>
+                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={markAllNotificationsRead}
+                      className="text-xs text-zinc-400 hover:text-white transition-colors"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-zinc-100">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-zinc-400">
+                      No new notifications
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => {
+                          setActiveTab(n.targetTab);
+                          markNotificationRead(n.id);
+                          setShowNotifications(false);
+                        }}
+                        className={`p-3.5 text-xs cursor-pointer hover:bg-zinc-50 transition-colors flex gap-3 ${
+                          !n.read ? 'bg-sky-50/60 font-medium' : ''
+                        }`}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          {n.type === 'checkin' && <QrCode className="w-4 h-4 text-emerald-600" />}
+                          {n.type === 'booking' && <Calendar className="w-4 h-4 text-amber-600" />}
+                          {n.type === 'issue' && <AlertTriangle className="w-4 h-4 text-rose-600" />}
+                        </div>
+                        <div className="flex-1 space-y-0.5">
+                          <div className="flex items-center justify-between font-semibold text-zinc-900">
+                            <span>{n.title}</span>
+                            <span className="text-[10px] text-zinc-400 font-normal">{n.timestamp}</span>
+                          </div>
+                          <p className="text-zinc-600 text-[11px] line-clamp-2">{n.message}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => fetchData(true)}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-white border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-colors shadow-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sky-600' : 'text-zinc-500'}`} />
+            Refresh Data
+          </button>
+        </div>
       </div>
 
       {/* Global Alert Notification */}
@@ -760,7 +936,7 @@ export default function IacMobile() {
                       <div>
                         <span className="text-zinc-400 block">Date & Time</span>
                         <span className="font-medium text-zinc-800">
-                          {new Date(b.requestedDate).toLocaleDateString()} @ {b.requestedSlot}
+                          {new Date(b.requestedDate).toLocaleDateString()} @ {b.arrivalTime || b.requestedSlot}
                         </span>
                       </div>
                     </div>
