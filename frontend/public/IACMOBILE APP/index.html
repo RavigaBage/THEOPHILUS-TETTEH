@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>IAC MOBILE APP | Adjei Business Hub</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#12201B">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -40,7 +45,6 @@
 
   .content{ flex:1; padding:0 20px 100px; overflow-y:auto; }
 
-  /* ---- Ticket / day pass ---- */
   .pass{
     background:var(--ticket); border-radius:18px; position:relative;
     padding:20px 20px 16px; margin-bottom:18px;
@@ -90,13 +94,12 @@
   .verify-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--graphite); text-transform:uppercase; letter-spacing:0.06em; }
   .verify-status{ display:flex; align-items:center; gap:7px; margin-top:10px; font-size:12px; color:#8A6106; font-weight:500; }
   .verify-status.confirmed{ color:#3B6D11; font-weight:700; }
-  .pulse-dot{ width:8px; height:8px; border-radius:50%; background:#FFC24B; animation:pulse 1s infinite; shrink-0; }
+  .pulse-dot{ width:8px; height:8px; border-radius:50%; background:#FFC24B; animation:pulse 1s infinite; }
   .verify-status.confirmed .pulse-dot{ background:#639922; animation:none; }
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   .confetti{ position:fixed; width:8px; height:8px; border-radius:50%; background:var(--marigold); pointer-events:none; z-index:100; }
   @keyframes fly{ to{ transform:translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
 
-  /* ---- quick actions ---- */
   .quick{ display:flex; gap:10px; margin-bottom:22px; }
   .qtile{
     flex:1; background:var(--ink-3); border:1px solid #2C4238; border-radius:14px;
@@ -107,15 +110,12 @@
   .qtile .t{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--ticket); }
   .qtile .s{ font-size:11px; color:var(--graphite); margin-top:2px; }
 
-  /* ---- section heading ---- */
   .sec-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
   .sec-title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; color:var(--ticket); }
   .sec-link{ font-size:11px; color:var(--signal); font-family:'IBM Plex Mono',monospace; cursor:pointer; }
 
-  /* ---- board leaderboard container ---- */
   .board{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:6px; margin-bottom:22px; }
 
-  /* ---- announcement slider ---- */
   .slider{ position:relative; border-radius:16px; overflow:hidden; margin-bottom:22px; background:#0A130F; min-height:160px; }
   .slider-track{ display:flex; transition:transform 0.45s cubic-bezier(.2,.8,.3,1); }
   .slide{ min-width:100%; position:relative; height:160px; }
@@ -134,7 +134,6 @@
   .dot{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.35); cursor:pointer; }
   .dot.active{ background:#fff; width:14px; border-radius:3px; transition:width 0.25s; }
 
-  /* ---- leaderboard preview ---- */
   .lb-row{ display:flex; align-items:center; gap:12px; padding:10px 4px; }
   .lb-rank{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--graphite); width:18px; }
   .lb-avatar{ width:32px; height:32px; border-radius:50%; background:var(--signal); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; color:#04342C; flex-shrink:0; }
@@ -142,7 +141,6 @@
   .lb-streak{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--marigold); }
   .lb-row.me{ background:var(--ink-3); border-radius:10px; }
 
-  /* ---- bottom nav ---- */
   .navbar{
     position:absolute; bottom:14px; left:14px; right:14px; background:var(--ink-3);
     border:1px solid #2C4238; border-radius:20px; display:flex; padding:8px; z-index:10;
@@ -153,7 +151,6 @@
   .navitem.active{ background:var(--ember); }
   .navitem.active .l{ color:#3A1200; }
 
-  /* ---- generic card / rooms / report ---- */
   .room-card{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:14px; margin-bottom:12px; cursor:pointer; transition:border-color .2s; }
   .room-card:hover{ border-color:var(--signal); }
   .room-card.selected{ border-color:var(--signal); background:#1d382d; }
@@ -177,6 +174,7 @@
   .status{ font-family:'IBM Plex Mono',monospace; font-size:9px; padding:3px 8px; border-radius:6px; text-transform:uppercase; white-space:nowrap; }
   .status.open{ background:var(--marigold); color:#412402; }
   .status.seen{ background:var(--signal); color:#04342C; }
+  .status.pending{ background:var(--marigold); color:#412402; }
   .status.resolved{ background:#639922; color:#173404; }
   .votes{ display:flex; align-items:center; gap:8px; margin-top:10px; }
   .vbtn{ border:1px solid #2C4238; background:none; color:var(--graphite); border-radius:8px; padding:4px 9px; font-size:12px; cursor:pointer; }
@@ -258,10 +256,10 @@
         <div class="room-card" onclick="pickRoom(this,'Training lab', '2')">
           <div class="t">Training lab (Room 2)</div><div class="s">18 workstations · Korean class venue</div>
         </div>
-        
+
         <div id="slotsWrap" class="hidden" style="margin-top:14px;">
           <div class="sec-title" style="margin:12px 0 4px; font-size:13px;" id="slotRoomName">Slots — today</div>
-          
+
           <div style="margin-bottom:10px;">
             <label style="font-size:11px; color:var(--graphite); display:block; margin-bottom:4px;">Select Booking Date:</label>
             <input type="date" id="bookingDateInput" class="input-field" value="">
@@ -273,7 +271,7 @@
           </div>
 
           <div class="slot-grid" id="slotGrid"></div>
-          
+
           <button class="checkin-btn" style="width:100%; justify-content:center; margin-top:16px; background:var(--signal); color:#04342C;" onclick="confirmBooking()">Submit Booking Request</button>
         </div>
       </div>
@@ -335,7 +333,11 @@
 </div>
 
 <script>
-// Global user identity & system state
+// ---- API base: point this at your local dashboard's backend if the app is served ----
+// ---- from somewhere other than the backend origin itself (e.g. a static server). ----
+// Same-origin (default): leave as ''  ·  Different host: e.g. 'http://localhost:5000'
+const API_BASE = '';
+
 let mobileUserId = localStorage.getItem('iac_mobile_user_id');
 if (!mobileUserId) {
   mobileUserId = 'mob_user_' + Math.floor(100000 + Math.random() * 900000);
@@ -358,7 +360,6 @@ function showToast(msg) {
   setTimeout(() => { toast.style.display = 'none'; }, 4000);
 }
 
-// Today's date pill
 const now = new Date();
 document.getElementById('today').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 document.getElementById('bookingDateInput').value = now.toISOString().split('T')[0];
@@ -374,10 +375,9 @@ function renderHoles(){
   }
 }
 
-// Fetch Profile & Streak
 async function fetchUserProfile() {
   try {
-    const res = await fetch(`/api/iac-mobile/user-profile/${mobileUserId}`);
+    const res = await fetch(`${API_BASE}/api/iac-mobile/user-profile/${mobileUserId}`);
     if (res.ok) {
       const data = await res.json();
       streak = data.streak || 0;
@@ -387,13 +387,12 @@ async function fetchUserProfile() {
   } catch(e) { console.warn('Profile fetch error:', e); }
 }
 
-// Slider logic
 const DEFAULT_SLIDE_IMG = 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=600&q=60&auto=format&fit=crop';
 const sliderState = {};
 
 async function loadAnnouncements() {
   try {
-    const res = await fetch('/api/iac-mobile/announcements');
+    const res = await fetch(`${API_BASE}/api/iac-mobile/announcements`);
     if (res.ok) {
       liveAnnouncements = await res.json();
     }
@@ -468,23 +467,30 @@ setInterval(()=>{
   Object.keys(sliderState).forEach(target=>moveSlider(target, 1));
 }, 5000);
 
-// Leaderboard
 async function loadLeaderboard(target, limit) {
   const el = document.getElementById(target);
   if (!el) return;
   el.innerHTML = '';
 
-  const mockUsers = [
-    { name: 'Kwabena O.', streak: 41 },
-    { name: 'Guest #182', streak: 33 },
-    { name: mobileUserName + ' (You)', streak: streak, me: true },
-    { name: 'Ama T.', streak: 12 },
-    { name: 'Guest #054', streak: 9 },
-  ];
+  let entries = [];
+  try {
+    const res = await fetch(`${API_BASE}/api/iac-mobile/leaderboard`);
+    if (res.ok) entries = await res.json();
+  } catch(e) { console.warn(e); }
 
-  mockUsers.sort((a,b) => b.streak - a.streak);
+  if (!entries || entries.length === 0) {
+    entries = [
+      { name: 'Kwabena O.', streak: 41 },
+      { name: 'Guest #182', streak: 33 },
+      { name: mobileUserName + ' (You)', streak: streak, me: true },
+      { name: 'Ama T.', streak: 12 },
+      { name: 'Guest #054', streak: 9 },
+    ];
+  }
 
-  mockUsers.slice(0, limit || mockUsers.length).forEach((p,i)=>{
+  entries.sort((a,b) => b.streak - a.streak);
+
+  entries.slice(0, limit || entries.length).forEach((p,i)=>{
     const row = document.createElement('div');
     row.className = 'lb-row' + (p.me ? ' me' : '');
     row.style.padding = '10px 10px';
@@ -494,10 +500,9 @@ async function loadLeaderboard(target, limit) {
   });
 }
 
-// Issues / Reports
 async function loadIssues(){
   try {
-    const res = await fetch(`/api/iac-mobile/issues?mobileUserId=${mobileUserId}`);
+    const res = await fetch(`${API_BASE}/api/iac-mobile/issues?mobileUserId=${mobileUserId}`);
     if (res.ok) {
       liveIssues = await res.json();
     }
@@ -519,6 +524,7 @@ async function loadIssues(){
     const userVote = iss.userVote;
     const isUp = userVote === 'up';
     const isDown = userVote === 'down';
+    const resolved = iss.status === 'resolved';
 
     div.innerHTML = `<div class="issue-top">
       <div>
@@ -528,9 +534,9 @@ async function loadIssues(){
       <span class="status ${iss.status}">${iss.status}</span>
     </div>
     <div class="votes">
-      <button class="vbtn ${isUp ? 'active-up' : ''}" onclick="voteIssue('${iss._id}', 'up')">▲ Upvote</button>
+      <button class="vbtn ${isUp ? 'active-up' : ''}" ${resolved ? 'disabled' : ''} onclick="voteIssue('${iss._id}', 'up')">▲ Upvote</button>
       <span class="vcount">${netVote}</span>
-      <button class="vbtn ${isDown ? 'active-down' : ''}" onclick="voteIssue('${iss._id}', 'down')">▼ Downvote</button>
+      <button class="vbtn ${isDown ? 'active-down' : ''}" ${resolved ? 'disabled' : ''} onclick="voteIssue('${iss._id}', 'down')">▼ Downvote</button>
     </div>`;
     el.appendChild(div);
   });
@@ -538,20 +544,23 @@ async function loadIssues(){
 
 async function voteIssue(id, direction) {
   try {
-    const res = await fetch(`/api/iac-mobile/issues/${id}/vote`, {
+    const res = await fetch(`${API_BASE}/api/iac-mobile/issues/${id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobileUserId, direction })
     });
     if (res.ok) {
       loadIssues();
+    } else {
+      const err = await res.json().catch(()=>({}));
+      showToast(err.error || 'Voting is closed on this issue');
     }
   } catch(e) { console.warn(e); }
 }
 
 async function flagPreset(text, category) {
   try {
-    const res = await fetch('/api/iac-mobile/issues', {
+    const res = await fetch(`${API_BASE}/api/iac-mobile/issues`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -587,32 +596,26 @@ function showTab(name){
   document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active', n.dataset.tab===name));
   const activeEl = document.getElementById('tab-'+name);
   if (activeEl) activeEl.classList.add('fadein');
-  
+
   if(name==='board') renderSlider('sliderFull');
   if(name==='rank') loadLeaderboard('lbFull');
   if(name==='report') loadIssues();
 }
 
-// Redirect / open attendance form
 function openAttendanceForm() {
   window.location.href = '/attendanceForm/index.html';
 }
 
-// START CHECK-IN TICKETING
 async function startCheckin(){
   const btn = document.getElementById('checkinBtn');
   btn.disabled = true;
   btn.textContent = 'Generating...';
 
   try {
-    const res = await fetch('/api/iac-mobile/checkin-tickets', {
+    const res = await fetch(`${API_BASE}/api/iac-mobile/checkin-tickets`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mobileUserId,
-        mobileUserName,
-        mobileUserEmail
-      })
+      body: JSON.stringify({ mobileUserId, mobileUserName, mobileUserEmail })
     });
 
     const ticket = await res.json();
@@ -633,7 +636,6 @@ async function startCheckin(){
 
     showToast(`Ticket ${ticket.ticketCode} sent to Admin Dashboard!`);
 
-    // Poll for admin approval
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(checkTicketStatus, 2500);
 
@@ -647,10 +649,9 @@ async function startCheckin(){
 async function checkTicketStatus() {
   if (!currentTicketId) return;
   try {
-    const res = await fetch('/api/iac-mobile/checkin-tickets');
+    const res = await fetch(`${API_BASE}/api/iac-mobile/checkin-tickets/${currentTicketId}`);
     if (res.ok) {
-      const tickets = await res.json();
-      const myTicket = tickets.find(t => t._id === currentTicketId);
+      const myTicket = await res.json();
 
       if (myTicket && myTicket.status === 'confirmed') {
         clearInterval(pollTimer);
@@ -662,7 +663,6 @@ async function checkTicketStatus() {
           status.innerHTML = '<span class="pulse-dot"></span> Verified by staff — Checked into Lounge!';
         }
 
-        // Celebrate
         fetchUserProfile();
         triggerConfetti();
 
@@ -692,7 +692,6 @@ function triggerConfetti(){
   }
 }
 
-// BOOKING ROOM LOGIC
 let selectedRoomName = null;
 let selectedRoomNum = '3';
 let selectedSlot = null;
@@ -733,7 +732,7 @@ async function confirmBooking(){
   const programVal = document.getElementById('bookingProgramInput').value.trim() || 'Room Reservation';
 
   try {
-    const res = await fetch('/api/iac-mobile/booking-requests', {
+    const res = await fetch(`${API_BASE}/api/iac-mobile/booking-requests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -758,7 +757,12 @@ async function confirmBooking(){
   }
 }
 
-// Init Page
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
 fetchUserProfile();
 loadAnnouncements();
 loadLeaderboard('lbPreview', 3);
