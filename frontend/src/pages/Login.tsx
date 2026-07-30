@@ -109,8 +109,8 @@ export default function LoginPage() {
                 <input
                   id="identifier"
                   name="identifier"
-                  type="email"
-                  autoComplete="email"
+                  type="text"
+                  autoComplete="username"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}

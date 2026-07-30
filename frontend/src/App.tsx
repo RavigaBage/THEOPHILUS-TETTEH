@@ -10,7 +10,6 @@ import Reports from './pages/Reports';
 import AttendanceQR from './pages/AttendanceQR';
 import AttendanceForm from './pages/AttendanceForm';
 import Login from './pages/Login';
-import MobileApp from './pages/MobileApp';
 
 function App() {
   return (
@@ -19,7 +18,6 @@ function App() {
         {/* Public routes — never touch ProtectedRoute */}
         <Route path="/attendance/:token" element={<AttendanceForm />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/mobile" element={<MobileApp />} />
 
         <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
           <Route index element={<Home />} />
@@ -28,7 +26,6 @@ function App() {
           <Route path="devices" element={<Devices />} />
           <Route path="reports" element={<Reports />} />
           <Route path="attendance-qr" element={<AttendanceQR />} />
-          <Route path="mobile-hub" element={<MobileApp />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

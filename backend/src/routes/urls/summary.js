@@ -4,9 +4,9 @@ const LoungeData = require('./../../models/InternetLounge');
 const router = express.Router();
 
 
-router.get('/summary-patch', restrictTo('user', 'admin'), async(req, res)=>{
+router.get('/summary-patch', protect, restrictTo('user', 'admin'), async(req, res)=>{
     try {
-        const year = new date().getFullYear();
+        const year = new Date().getFullYear();
         const startOfYear = new Date(`${year}`);
         const endOfYear   = new Date(`${year+1}`);
         const filter = {}

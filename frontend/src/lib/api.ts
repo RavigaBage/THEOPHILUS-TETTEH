@@ -1,6 +1,11 @@
 
 const AUTH_ENDPOINTS = ["auth/refresh", "auth/verify", "auth/login"];
-const API_BASE_URL = import.meta.env.PUBLIC_API_SERVER_URL || "http://localhost:3001";
+const API_BASE_URL = import.meta.env.PUBLIC_API_SERVER_URL || "";
+
+function getUrl(endpoint: string): string {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return API_BASE_URL ? `${API_BASE_URL}${cleanEndpoint}` : cleanEndpoint;
+}
 
 let refreshPromise: Promise<boolean> | null = null;
 let accessToken: string | null = null;
@@ -11,7 +16,7 @@ export function setAccessToken(token: string | null) {
 }
 export async function refreshAccessToken(): Promise<boolean> {
     if (!refreshPromise) {
-        refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        refreshPromise = fetch(getUrl('/api/auth/refresh'), {
             method: "POST",
             credentials: "include",
             headers: {
@@ -48,7 +53,7 @@ async function request(
   isRetry = false
 ): Promise<any> {
  
-  const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
+  const res = await fetch(getUrl(endpoint), {
     ...options,
         credentials: "include",
     headers: {
@@ -85,7 +90,7 @@ export const api = {
     request(endpoint, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (endpoint: string) => request(endpoint, { method: "DELETE" }),
   download: async (endpoint: string, fallbackFilename = "IAC_Report.xlsx") => {
-    const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
+    const res = await fetch(getUrl(endpoint), {
       credentials: "include",
       headers: {
       "Content-Type": "application/json",

@@ -24,7 +24,23 @@ const seedInitialData = async () => {
 };
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/Iac_db';
+  const uri = process.env.MONGO_URL;
+  const useMemoryDb = process.env.USE_MEMORY_DB === 'true' || uri === 'memory' || !uri;
+
+  if (useMemoryDb) {
+    try {
+      console.log('ℹ️ Initializing MongoMemoryServer...');
+      mongoServer = await MongoMemoryServer.create();
+      const memoryUri = mongoServer.getUri();
+      await mongoose.connect(memoryUri);
+      console.log(`✅ MongoDB Memory Server connected at: ${memoryUri}`);
+      await seedInitialData();
+      return;
+    } catch (memErr) {
+      console.error('❌ Failed to start MongoMemoryServer:', memErr.message);
+      process.exit(1);
+    }
+  }
 
   try {
     const conn = await mongoose.connect(uri, {
@@ -35,11 +51,11 @@ const connectDB = async () => {
 
     await seedInitialData();
   } catch (err) {
-    console.log(`ℹ️ Local MongoDB not found (${err.message}). Starting MongoMemoryServer...`);
+    console.log(`ℹ️ External MongoDB connection unavailable (${err.message}). Starting MongoMemoryServer fallback...`);
     try {
       mongoServer = await MongoMemoryServer.create();
       const memoryUri = mongoServer.getUri();
-      const conn = await mongoose.connect(memoryUri);
+      await mongoose.connect(memoryUri);
       console.log(`✅ MongoDB Memory Server connected at: ${memoryUri}`);
       await seedInitialData();
     } catch (memErr) {
