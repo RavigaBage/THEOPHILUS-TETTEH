@@ -46,6 +46,7 @@ const { commandService, dispatcher } = initServices(socketService);
 
 app.use('/api', IpRateLimiter);
 app.use('/api/auth', require('./src/routes/auth'));
+app.use('/api/iac-mobile', require('./src/routes/urls/iacMobile'));
 app.use('/api/summary', require('./src/routes/urls/summary'));
 app.use('/api/public', require('./src/routes/public'));
 app.use('/api', createProtectedRoutes(commandService));
