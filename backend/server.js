@@ -30,7 +30,7 @@ app.set('trust proxy', 1);
 
 const IpRateLimiter = rateLimit({
    windowMs: 15 * 60 * 1000,
-    max: 50,
+    max: 1050,
     message: { message: 'Too many requests from this IP' },
     validate: { xForwardedForHeader: false },
 });

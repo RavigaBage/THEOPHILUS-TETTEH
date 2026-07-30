@@ -326,6 +326,7 @@ async function fillDemo(email, password, name) {
     }, 800);
 
   } catch (err) {
+    showToast('Unable to Sign in')
     showToast(err.message);
     btn.disabled = false;
     btn.textContent = 'Sign In to Mobile App';

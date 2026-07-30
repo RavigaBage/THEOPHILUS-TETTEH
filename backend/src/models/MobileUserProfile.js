@@ -15,10 +15,12 @@ const mobileUserProfileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-mobileUserProfileSchema.pre('save', async function (next) {
-  if (!this.isModified('password') || !this.password) return next();
+mobileUserProfileSchema.pre('save', async function () {
+  if (!this.isModified('password') || !this.password) {
+    return;
+  }
+
   this.password = await bcrypt.hash(this.password, 12);
-  next();
 });
 
 mobileUserProfileSchema.methods.comparePassword = async function (userPassword) {
