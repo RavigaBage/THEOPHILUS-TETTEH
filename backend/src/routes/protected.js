@@ -5,9 +5,7 @@ const loungeRouter = require('./urls/lounge');
 const EventProgamRouter = require('./urls/EventPrograms');
 const InitiateService_route  = require('./urls/deviceStatus');
 const TicketRouter = require('./urls/internet_token');
-const CameraRouter = require('./urls/camera');
 const ReportRouter = require('./urls/reports');
-const MediaRouter = require('./urls/media');
 const QRCodeRouter = require('./urls/qrcodes');
 
 function createProtectedRoutes(commandService,dispatcher) {
@@ -29,9 +27,7 @@ function createProtectedRoutes(commandService,dispatcher) {
 
     router.use('/users', loungeRouter);
     router.use('/bookings', EventProgamRouter);
-    router.use('/cameras', CameraRouter);
     router.use('/reports', ReportRouter);
-    router.use('/media', MediaRouter);
     router.use('/qrcodes', QRCodeRouter);
 
     router.get('/admin', restrictTo('admin'), (req, res) => {

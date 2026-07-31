@@ -1,6 +1,6 @@
-# 🚀 IAC Business Hub Management System
+# 🇬🇭 🇰🇷 Ghana-Korea IAC - Information Access Center
 
-> **A Next-Generation Operations Platform for Internet Lounge Management, Mobile Member Access Passes, QR Attendance Tracking, and Hardware Monitoring.**
+> **Operations & Management Platform for Ghana-Korea IAC - Information Access Center | Internet Lounge Management, Mobile Member Access Passes, QR Attendance Tracking, and Device Monitoring.**
 
 ---
 
@@ -18,16 +18,16 @@
    - [5. Attendance QR Form Setup](#5-attendance-qr-form-setup)
 7. [Environment Variables Reference](#-environment-variables-reference)
 8. [API Endpoints Reference](#-api-endpoints-reference)
-9. [Agents, Cameras & Hardware Integration](#-agents-cameras--hardware-integration)
+9. [Agents & Device Status Integration](#-agents--device-status-integration)
 10. [Production Deployment & Best Practices](#-production-deployment--best-practices)
 
 ---
 
 ## 🌐 Project Overview & Scope
 
-The **IAC Business Hub Management System** is an end-to-end operational software suite designed for modern Internet Business Centers, Academic Tech Lounges, and Hub Workspaces.
+The **Ghana-Korea IAC (Information Access Center) Management System** 🇬🇭 🇰🇷 is an end-to-end operational software suite designed for modern Internet Business Centers, Academic Tech Lounges, and Hub Workspaces.
 
-It unifies **mobile member identity**, **frictionless check-ins via digital day passes or QR scanning**, **staff lounge management**, **network internet token generation**, and **real-time hardware/camera monitoring** into a single cohesive platform.
+It unifies **mobile member identity**, **frictionless check-ins via digital day passes or QR scanning**, **staff lounge management**, **network internet token generation**, and **real-time hardware device monitoring** into a single cohesive platform.
 
 ### Core Objectives:
 * **Frictionless Member Onboarding & Check-in**: Mobile users sign up with their name, phone number, and ID card to generate verified digital access passes.
@@ -58,10 +58,10 @@ It unifies **mobile member identity**, **frictionless check-ins via digital day 
 * **Auto-Prefill Integration**: Detects logged-in mobile user credentials from local storage and pre-fills name, phone number, and ID.
 * **Direct Database Integration**: Automatically creates an entry in the Internet Lounge database and credits user streak points upon submission.
 
-### 📊 4. Network, Reports & Hardware Monitoring
+### 📊 4. Network, Reports & Device Status Agents
 * **Internet Vouchers / Tokens**: Generate and print time-limited bandwidth tokens for visitors.
-* **Camera Stream Feeds**: Embedded live IP camera preview for lounge security monitoring.
 * **Device Status Agent**: Real-time status monitoring for network hardware, PCs, and access points.
+* **Analytics & Reports**: Historical occupancy logs, peak-hour breakdown, and CSV/PDF export capabilities.
 
 ---
 
@@ -249,11 +249,10 @@ Visitors can scan the QR code generated in the Admin Dashboard under **"Attendan
 
 ---
 
-## 📷 Agents, Cameras & Hardware Integration
+## 📡 Agents & Device Status Integration
 
-* **IP Camera / RTSP Monitoring**: The dashboard includes an embedded monitoring view to inspect lounge entrance feeds.
 * **Internet Voucher Generator**: Integrates with local router/captive portal endpoints to generate time-limited WiFi access tokens.
-* **Status Agent**: Periodically pings connected hardware units (PCs, routers, printers) and updates the Devices page in the Admin panel.
+* **Status Agent**: Periodically checks connected hardware units (PCs, routers, printers) and updates the Devices page in the Admin panel.
 
 ---
 
@@ -270,5 +269,5 @@ Visitors can scan the QR code generated in the Admin Dashboard under **"Attendan
 ---
 
 <div align="center">
-  <b>Built for IAC Business Hub & Community</b> • Powered by Modern Web & Mobile Technologies
+  <b>Ghana-Korea IAC - Information Access Center 🇬🇭 🇰🇷</b> • Powered by Modern Web & Mobile Technologies
 </div>
