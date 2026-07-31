@@ -64,6 +64,28 @@ useEffect(() => {
   setFormData((prev) => ({ ...prev, user_time_in: now.toISOString().slice(0, 16) }));
 }, [currentPage, fetchUsers]);
 
+  // Lock background scroll while the modal is open
+  useEffect(() => {
+    if (isFormOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [isFormOpen]);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!isFormOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCancel();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFormOpen]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -190,144 +212,160 @@ useEffect(() => {
         </div>
         
         <button 
-          onClick={() => {
-            if (isFormOpen) {
-              handleCancel();
-            } else {
-              setIsFormOpen(true);
-            }
-          }}
+          onClick={() => setIsFormOpen(true)}
           className="px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium flex items-center gap-2 self-start md:self-auto"
         >
-          {isFormOpen ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {isFormOpen ? 'Cancel' : 'Add User'}
+          <Plus className="w-4 h-4" />
+          Add User
         </button>
       </header>
-      
-      {isFormOpen && (
-        <div className="mb-8 bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-zinc-100 bg-zinc-50/50">
-            <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
-              <User className="w-5 h-5 text-zinc-400" />
-              {editingId ? 'Edit User Record' : 'Register New User'}
-            </h2>
-          </div>
-          <form onSubmit={handleSubmit} className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Full Name (Signature)</label>
-                <input 
-                  type="text" 
-                  name="full_name" 
-                  required
-                  value={formData.full_name} 
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
-                  placeholder="e.g. John Doe"
-                />
-                {errors.full_name && <p className="text-xs text-red-500 mt-1">{errors.full_name}</p>}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Contact Number</label>
-                <input 
-                  type="text" 
-                  name="contact" 
-                  required
-                  value={formData.contact} 
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
-                  placeholder="e.g. 0501234567"
-                />
-                {errors.contact && <p className="text-xs text-red-500 mt-1">{errors.contact}</p>}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">ID Type</label>
-                <select 
-                  name="user_id_type" 
-                  value={formData.user_id_type} 
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
-                >
-                  <option value="ghana_card">Ghana Card</option>
-                  <option value="student_id">Student ID</option>
-                  <option value="passport">Passport</option>
-                  <option value="driver_license">Driver License</option>
-                  <option value="voter_id">Voter ID</option>
-                  <option value="nhis_card">NHIS Card</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">ID Number</label>
-                <input 
-                  type="text" 
-                  name="user_id" 
-                  required
-                  value={formData.user_id} 
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
-                  placeholder="ID Number"
-                />
-                {errors.user_id && <p className="text-xs text-red-500 mt-1">{errors.user_id}</p>}
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Gender</label>
-                <select 
-                  name="gender" 
-                  value={formData.gender} 
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-1">Time In</label>
-                  <input 
-                    type="datetime-local" 
-                    name="user_time_in" 
-                    required
-                    value={formData.user_time_in} 
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-1">Time Out (Optional)</label>
-                  <input 
-                    type="datetime-local" 
-                    name="user_time_out" 
-                    value={formData.user_time_out} 
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-end pt-6 border-t border-zinc-100">
-              <button 
-                type="submit" 
-                disabled={submitting}
-                className="px-6 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+      {isFormOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) handleCancel();
+          }}
+        >
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl border border-zinc-200/60 shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-zinc-100 bg-zinc-50/80 backdrop-blur-sm rounded-t-2xl">
+              <h2 className="text-lg font-semibold text-zinc-900 flex items-center gap-2">
+                <User className="w-5 h-5 text-zinc-400" />
+                {editingId ? 'Edit User Record' : 'Register New User'}
+              </h2>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="p-1.5 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200/60 rounded-lg transition-colors"
+                aria-label="Close"
               >
-                {submitting ? 'Saving...' : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Save Record
-                  </>
-                )}
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </form>
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Full Name (Signature)</label>
+                  <input 
+                    type="text" 
+                    name="full_name" 
+                    required
+                    value={formData.full_name} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                    placeholder="e.g. John Doe"
+                  />
+                  {errors.full_name && <p className="text-xs text-red-500 mt-1">{errors.full_name}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Contact Number</label>
+                  <input 
+                    type="text" 
+                    name="contact" 
+                    required
+                    value={formData.contact} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                    placeholder="e.g. 0501234567"
+                  />
+                  {errors.contact && <p className="text-xs text-red-500 mt-1">{errors.contact}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">ID Type</label>
+                  <select 
+                    name="user_id_type" 
+                    value={formData.user_id_type} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
+                  >
+                    <option value="ghana_card">Ghana Card</option>
+                    <option value="student_id">Student ID</option>
+                    <option value="passport">Passport</option>
+                    <option value="driver_license">Driver License</option>
+                    <option value="voter_id">Voter ID</option>
+                    <option value="nhis_card">NHIS Card</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">ID Number</label>
+                  <input 
+                    type="text" 
+                    name="user_id" 
+                    required
+                    value={formData.user_id} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                    placeholder="ID Number"
+                  />
+                  {errors.user_id && <p className="text-xs text-red-500 mt-1">{errors.user_id}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Gender</label>
+                  <select 
+                    name="gender" 
+                    value={formData.gender} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm bg-white"
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Time In</label>
+                    <input 
+                      type="datetime-local" 
+                      name="user_time_in" 
+                      required
+                      value={formData.user_time_in} 
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">Time Out (Optional)</label>
+                    <input 
+                      type="datetime-local" 
+                      name="user_time_out" 
+                      value={formData.user_time_out} 
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end gap-3 pt-6 border-t border-zinc-100">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-6 py-2 bg-white text-zinc-700 border border-zinc-200 rounded-lg hover:bg-zinc-50 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting}
+                  className="px-6 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                >
+                  {submitting ? 'Saving...' : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Record
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

@@ -262,14 +262,19 @@ router.get('/checkin-tickets/today/:mobileUserId', async (req, res) => {
     const { mobileUserId } = req.params;
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
+
+    const formatLocal = (date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
 
     const ticket = await CheckinTicket.findOne({
       mobileUserId,
       $or: [
-        { requestedAt: { $gte: todayStart, $lte: todayEnd } },
-        { confirmedAt: { $gte: todayStart, $lte: todayEnd } }
+        { requestedAt: { $gte: formatLocal(todayStart), $lte: formatLocal(todayEnd) } },
+        { confirmedAt: { $gte: formatLocal(todayStart), $lte: formatLocal(todayEnd) } }
       ]
     }).sort({ createdAt: -1 });
 
@@ -355,6 +360,10 @@ router.post('/checkin-tickets', async (req, res) => {
 // Confirm checkin ticket (Admin action)
 router.post('/checkin-tickets/:id/confirm', async (req, res) => {
   try {
+        const todayStart = new Date();
+    const formatLocal = (date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
     const ticket = await CheckinTicket.findById(req.params.id);
     if (!ticket) {
       return res.status(404).json({ error: 'Ticket not found' });
@@ -373,7 +382,8 @@ router.post('/checkin-tickets/:id/confirm', async (req, res) => {
       identifierType: identifierType || 'other',
       contactNumber: contactNumber || '0000000000',
       gender: gender || 'other',
-      timeIn: new Date().toLocaleTimeString('en-US', { hour12: false }),
+      timeIn: formatLocal(todayStart),
+      timeOut:null,
       Signature: `Mobile Ticket Pass ${ticket.ticketCode}`,
     });
 
@@ -381,6 +391,7 @@ router.post('/checkin-tickets/:id/confirm', async (req, res) => {
 
     // 2. Mark CheckinTicket as confirmed
     ticket.status = 'confirmed';
+    ticket.loungeID = loungeEntry._id;
     ticket.confirmedAt = new Date();
     ticket.confirmedBy = staffName || 'Admin Staff';
     await ticket.save();
@@ -426,19 +437,33 @@ router.post('/checkin-tickets/:id/decline', async (req, res) => {
 // Checkout user from active checkin ticket
 router.post('/checkin-tickets/:id/checkout', async (req, res) => {
   try {
+    const now = new Date();
+
     const ticket = await CheckinTicket.findById(req.params.id);
+
     if (!ticket) {
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
     ticket.status = 'checked_out';
-    ticket.checkedOutAt = new Date();
+    ticket.checkedOutAt = now;
     await ticket.save();
+
+    // Update lounge record
+    if (ticket.loungeID) {
+      await InternetLounge.findByIdAndUpdate(
+        ticket.loungeID,
+        {
+          timeOut: now
+        }
+      );
+    }
 
     res.json({
       message: 'Checked out successfully',
-      ticket,
+      ticket
     });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -180,7 +180,8 @@
 
   .navbar{
     position:absolute; bottom:14px; left:12px; right:12px; background:var(--ink-3);
-    border:1px solid #2C4238; border-radius:20px; display:flex; padding:6px; z-index:10;
+    border:1px solid #2C4238; border-radius:20px; display:flex; padding:6px; z-index:100;
+    box-shadow:0 10px 25px rgba(0,0,0,0.5);
   }
   .navitem{ flex:1; text-align:center; padding:7px 0; border-radius:12px; cursor:pointer; transition:background 0.2s; }
   .navitem .ic{ font-size:16px; }
@@ -333,6 +334,7 @@
         </div>
 
         <div id="slotsWrap" class="hidden" style="margin-top:14px;">
+          
           <div class="sec-title" style="margin:12px 0 4px; font-size:13px;" id="slotRoomName">Reservation Details</div>
           
           <div style="margin-bottom:12px;">
@@ -1128,7 +1130,7 @@ async function executeReportSubmission() {
       body: JSON.stringify({
         reporterId: mobileUserId,
         reporterName: mobileUserName,
-        category: category || 'General',
+        category: category,
         description: text
       })
     });
