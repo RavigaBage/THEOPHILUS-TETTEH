@@ -180,8 +180,7 @@
 
   .navbar{
     position:absolute; bottom:14px; left:12px; right:12px; background:var(--ink-3);
-    border:1px solid #2C4238; border-radius:20px; display:flex; padding:6px; z-index:100;
-    box-shadow:0 10px 25px rgba(0,0,0,0.5);
+    border:1px solid #2C4238; border-radius:20px; display:flex; padding:6px; z-index:10;
   }
   .navitem{ flex:1; text-align:center; padding:7px 0; border-radius:12px; cursor:pointer; transition:background 0.2s; }
   .navitem .ic{ font-size:16px; }
@@ -334,19 +333,11 @@
         </div>
 
         <div id="slotsWrap" class="hidden" style="margin-top:14px;">
-<<<<<<< HEAD
-          <div class="sec-title" style="margin:12px 0 4px; font-size:13px;" id="slotRoomName">Slots — today</div>
-
-          <div style="margin-bottom:10px;">
-            <label style="font-size:11px; color:var(--graphite); display:block; margin-bottom:4px;">Select Booking Date:</label>
-            <input type="date" id="bookingDateInput" class="input-field" value="">
-=======
           <div class="sec-title" style="margin:12px 0 4px; font-size:13px;" id="slotRoomName">Reservation Details</div>
           
           <div style="margin-bottom:12px;">
             <label style="font-size:11px; color:var(--graphite); display:block; margin-bottom:4px; font-family:'IBM Plex Mono',monospace;">SELECT BOOKING DATE:</label>
             <input type="date" id="bookingDateInput" class="input-field" style="width:100%; background:var(--ink); border:1px solid #2C4238; color:#fff; padding:10px; border-radius:10px; font-family:'Inter',sans-serif;">
->>>>>>> febfbc1d29f5a8dd70ae5efa420fd5cd6e4c8413
           </div>
 
           <div style="margin-bottom:12px;">
@@ -359,11 +350,6 @@
             <input type="text" id="bookingProgramInput" class="input-field" placeholder="e.g. Group Study Session" value="Study Session" style="width:100%; background:var(--ink); border:1px solid #2C4238; color:#fff; padding:10px; border-radius:10px; font-family:'Inter',sans-serif;">
           </div>
 
-<<<<<<< HEAD
-          <div class="slot-grid" id="slotGrid"></div>
-
-=======
->>>>>>> febfbc1d29f5a8dd70ae5efa420fd5cd6e4c8413
           <button class="checkin-btn" style="width:100%; justify-content:center; margin-top:16px; background:var(--signal); color:#04342C;" onclick="confirmBooking()">Submit Booking Request</button>
         </div>
       </div>
@@ -1142,7 +1128,7 @@ async function executeReportSubmission() {
       body: JSON.stringify({
         reporterId: mobileUserId,
         reporterName: mobileUserName,
-        category: category,
+        category: category || 'General',
         description: text
       })
     });
