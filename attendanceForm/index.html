@@ -539,27 +539,31 @@
   }
   function loadCachedDetailsAndPrefill() {
     const cached = localStorage.getItem('attendance_user_profile');
+    const mobileName = localStorage.getItem('iac_mobile_user_name');
+    const mobilePhone = localStorage.getItem('iac_mobile_user_phone');
+    const mobileId = localStorage.getItem('iac_mobile_user_id_num');
+
     if (cached) {
       try {
         const data = JSON.parse(cached);
-        fullNameInput.value = data.full_name || '';
-        contactInput.value = data.contact || '';
+        fullNameInput.value = data.full_name || mobileName || '';
+        contactInput.value = data.contact || mobilePhone || '';
         genderSelect.value = data.gender || '';
-        idNumberInput.value = data.user_id || '';
+        idNumberInput.value = data.user_id || mobileId || '';
         if (data.user_id_type) {
           highlightIdTypeOption(data.user_id_type);
         } else {
-          highlightIdTypeOption('');
+          highlightIdTypeOption('student_id');
         }
-        updateAvatarFromName(data.full_name || '');
+        updateAvatarFromName(fullNameInput.value);
       } catch(e) { console.warn(e); }
     } else {
-      fullNameInput.value = '';
-      contactInput.value = '';
+      fullNameInput.value = mobileName || '';
+      contactInput.value = mobilePhone || '';
       genderSelect.value = '';
-      idNumberInput.value = '';
-      highlightIdTypeOption('');
-      updateAvatarFromName('');
+      idNumberInput.value = mobileId || '';
+      highlightIdTypeOption('student_id');
+      updateAvatarFromName(fullNameInput.value);
     }
   }
 
@@ -607,28 +611,46 @@
         submitBtn.textContent = 'Submitting...';
       }
 
-      // Submit checkin ticket to backend
-      const res = await fetch('/api/iac-mobile/checkin-tickets', {
+      // Submit attendance directly to Lounge system database via active QR Code route
+      const res = await fetch('/api/public/qrcodes/active/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mobileUserId: 'qr_user_' + (idNumVal || Date.now()),
-          mobileUserName: fullNameVal,
-          mobileUserEmail: contactVal
+          fullName: fullNameVal,
+          idNumber: idNumVal,
+          idType: idTypeVal || 'student_id',
+          gender: genderVal || 'other',
+          contact: contactVal,
+          timeIn: signInVal,
+          timeOut: signOutVal
         })
       });
+
+      // Also create checkin ticket if logged in
+      const mobileUserId = localStorage.getItem('iac_mobile_user_id') || ('qr_user_' + (idNumVal || Date.now()));
+      await fetch('/api/iac-mobile/checkin-tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mobileUserId: mobileUserId,
+          mobileUserName: fullNameVal,
+          mobileUserEmail: localStorage.getItem('iac_mobile_user_email') || contactVal,
+          mobileUserPhone: contactVal,
+          mobileUserIdNumber: idNumVal
+        })
+      }).catch(err => console.warn(err));
 
       if (typeof submitBtn !== 'undefined' && submitBtn) {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Attendance';
       }
 
-      showStatus(`✅ Attendance recorded for ${fullNameVal}! Ticket sent to Admin Dashboard for confirmation.`, 'success');
+      showStatus(`✅ Attendance successfully logged to Lounge system for ${fullNameVal}!`, 'success');
       updateAvatarFromName(fullNameVal);
 
       setTimeout(() => {
         window.location.href = '/IACMOBILE APP/index.html';
-      }, 2500);
+      }, 2000);
     } catch (e) {
       if (typeof submitBtn !== 'undefined' && submitBtn) {
         submitBtn.disabled = false;

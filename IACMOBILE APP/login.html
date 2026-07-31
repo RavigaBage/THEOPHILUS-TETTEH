@@ -129,6 +129,14 @@
           <input type="email" id="regEmail" class="input-field" placeholder="alex.johnson@example.com" required>
         </div>
         <div class="field-group">
+          <label for="regPhone">Phone / Contact Number</label>
+          <input type="tel" id="regPhone" class="input-field" placeholder="0241234567" required>
+        </div>
+        <div class="field-group">
+          <label for="regStudentId">Student ID / ID Number</label>
+          <input type="text" id="regStudentId" class="input-field" placeholder="10987654" required>
+        </div>
+        <div class="field-group">
           <label for="regPassword">Password (min 6 chars)</label>
           <input type="password" id="regPassword" class="input-field" placeholder="••••••••" minlength="6" required>
         </div>
@@ -221,6 +229,8 @@ async function handleLogin(e) {
     localStorage.setItem('iac_mobile_user_id', data.user.mobileUserId);
     localStorage.setItem('iac_mobile_user_name', data.user.name);
     localStorage.setItem('iac_mobile_user_email', data.user.email);
+    localStorage.setItem('iac_mobile_user_phone', data.user.phoneNumber || '');
+    localStorage.setItem('iac_mobile_user_id_num', data.user.studentId || '');
 
     showToast('Signed in successfully! Redirecting...');
     setTimeout(() => {
@@ -238,6 +248,8 @@ async function handleRegister(e) {
   e.preventDefault();
   const name = document.getElementById('regName').value.trim();
   const email = document.getElementById('regEmail').value.trim();
+  const phoneNumber = document.getElementById('regPhone').value.trim();
+  const studentId = document.getElementById('regStudentId').value.trim();
   const password = document.getElementById('regPassword').value;
   const confirm = document.getElementById('regPasswordConfirm').value;
   const btn = document.getElementById('regSubmitBtn');
@@ -254,7 +266,7 @@ async function handleRegister(e) {
     const res = await fetch('/api/iac-mobile/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, phoneNumber, studentId })
     });
 
     const data = await res.json();
@@ -268,6 +280,8 @@ async function handleRegister(e) {
     localStorage.setItem('iac_mobile_user_id', data.user.mobileUserId);
     localStorage.setItem('iac_mobile_user_name', data.user.name);
     localStorage.setItem('iac_mobile_user_email', data.user.email);
+    localStorage.setItem('iac_mobile_user_phone', data.user.phoneNumber || phoneNumber);
+    localStorage.setItem('iac_mobile_user_id_num', data.user.studentId || studentId);
 
     showToast('Account created successfully! Opening Mobile App...');
     setTimeout(() => {
@@ -319,6 +333,8 @@ async function fillDemo(email, password, name) {
     localStorage.setItem('iac_mobile_user_id', data.user.mobileUserId);
     localStorage.setItem('iac_mobile_user_name', data.user.name);
     localStorage.setItem('iac_mobile_user_email', data.user.email);
+    localStorage.setItem('iac_mobile_user_phone', data.user.phoneNumber || '0241002003');
+    localStorage.setItem('iac_mobile_user_id_num', data.user.studentId || '10982341');
 
     showToast(`Signed in as ${data.user.name}! Redirecting...`);
     setTimeout(() => {
@@ -326,7 +342,6 @@ async function fillDemo(email, password, name) {
     }, 800);
 
   } catch (err) {
-    showToast('Unable to Sign in')
     showToast(err.message);
     btn.disabled = false;
     btn.textContent = 'Sign In to Mobile App';

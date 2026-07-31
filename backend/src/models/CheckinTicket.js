@@ -5,8 +5,9 @@ const checkinTicketSchema = new mongoose.Schema(
     mobileUserId: { type: String, required: true },
     mobileUserName: { type: String, default: 'Mobile Visitor' },
     mobileUserEmail: { type: String, default: '' },
+    mobileUserPhone: { type: String, default: '' },
+    mobileUserIdNumber: { type: String, default: '' },
     ticketCode: { type: String, required: true, unique: true },
-    loungeID:{type: String},
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'declined', 'checked_out', 'expired'],

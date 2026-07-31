@@ -42,7 +42,7 @@ const verifyMobileToken = async (req, res, next) => {
 // REGISTER
 router.post('/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phoneNumber, studentId } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
@@ -61,6 +61,8 @@ router.post('/auth/register', async (req, res) => {
       mobileUserId,
       name: name.trim(),
       email: normalizedEmail,
+      phoneNumber: phoneNumber ? phoneNumber.trim() : '',
+      studentId: studentId ? studentId.trim() : '',
       password,
     });
 
@@ -82,6 +84,8 @@ router.post('/auth/register', async (req, res) => {
         mobileUserId: profile.mobileUserId,
         name: profile.name,
         email: profile.email,
+        phoneNumber: profile.phoneNumber,
+        studentId: profile.studentId,
         streak: profile.streak,
         totalCheckins: profile.totalCheckins,
       },
@@ -126,6 +130,8 @@ router.post('/auth/login', async (req, res) => {
         mobileUserId: profile.mobileUserId,
         name: profile.name,
         email: profile.email,
+        phoneNumber: profile.phoneNumber,
+        studentId: profile.studentId,
         streak: profile.streak,
         totalCheckins: profile.totalCheckins,
       },
@@ -145,6 +151,8 @@ router.get('/auth/verify', verifyMobileToken, async (req, res) => {
       mobileUserId: profile.mobileUserId,
       name: profile.name,
       email: profile.email,
+      phoneNumber: profile.phoneNumber,
+      studentId: profile.studentId,
       streak: profile.streak,
       totalCheckins: profile.totalCheckins,
     },
@@ -262,19 +270,14 @@ router.get('/checkin-tickets/today/:mobileUserId', async (req, res) => {
     const { mobileUserId } = req.params;
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
-
-    const formatLocal = (date) =>
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-
 
     const ticket = await CheckinTicket.findOne({
       mobileUserId,
       $or: [
-        { requestedAt: { $gte: formatLocal(todayStart), $lte: formatLocal(todayEnd) } },
-        { confirmedAt: { $gte: formatLocal(todayStart), $lte: formatLocal(todayEnd) } }
+        { requestedAt: { $gte: todayStart, $lte: todayEnd } },
+        { confirmedAt: { $gte: todayStart, $lte: todayEnd } }
       ]
     }).sort({ createdAt: -1 });
 
@@ -309,9 +312,18 @@ router.get('/checkin-tickets/:id', async (req, res) => {
 // Create checkin ticket (Mobile user action) with Duplicate Prevention
 router.post('/checkin-tickets', async (req, res) => {
   try {
-    const { mobileUserId, mobileUserName, mobileUserEmail } = req.body;
+    const { mobileUserId, mobileUserName, mobileUserEmail, mobileUserPhone, mobileUserIdNumber } = req.body;
     if (!mobileUserId) {
       return res.status(400).json({ error: 'mobileUserId is required' });
+    }
+
+    // Lookup user profile if phone or studentId missing from request body
+    let userPhone = mobileUserPhone || '';
+    let userIdNum = mobileUserIdNumber || '';
+    const profile = await MobileUserProfile.findOne({ mobileUserId });
+    if (profile) {
+      if (!userPhone) userPhone = profile.phoneNumber || '';
+      if (!userIdNum) userIdNum = profile.studentId || '';
     }
 
     // Duplicate Check-in Prevention Rule: Check if user already checked in today and has not checked out
@@ -343,8 +355,10 @@ router.post('/checkin-tickets', async (req, res) => {
 
     const ticket = new CheckinTicket({
       mobileUserId,
-      mobileUserName: mobileUserName || 'Mobile Visitor',
-      mobileUserEmail: mobileUserEmail || '',
+      mobileUserName: mobileUserName || (profile ? profile.name : 'Mobile Visitor'),
+      mobileUserEmail: mobileUserEmail || (profile ? profile.email : ''),
+      mobileUserPhone: userPhone,
+      mobileUserIdNumber: userIdNum,
       ticketCode: code,
       status: 'pending',
       requestedAt: new Date(),
@@ -360,10 +374,6 @@ router.post('/checkin-tickets', async (req, res) => {
 // Confirm checkin ticket (Admin action)
 router.post('/checkin-tickets/:id/confirm', async (req, res) => {
   try {
-        const todayStart = new Date();
-    const formatLocal = (date) =>
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-
     const ticket = await CheckinTicket.findById(req.params.id);
     if (!ticket) {
       return res.status(404).json({ error: 'Ticket not found' });
@@ -375,15 +385,18 @@ router.post('/checkin-tickets/:id/confirm', async (req, res) => {
 
     const { staffName, identifier, identifierType, contactNumber, gender } = req.body;
 
+    const profile = await MobileUserProfile.findOne({ mobileUserId: ticket.mobileUserId });
+    const finalPhone = contactNumber || ticket.mobileUserPhone || (profile ? profile.phoneNumber : '') || '0000000000';
+    const finalId = identifier || ticket.mobileUserIdNumber || (profile ? profile.studentId : '') || `MOB-${ticket.ticketCode}`;
+
     // 1. Create record in existing InternetLounge collection
     const loungeEntry = new InternetLounge({
-      name: ticket.mobileUserName || 'Mobile Visitor',
-      identifier: identifier || `MOB-${ticket.ticketCode}-${Date.now().toString().slice(-4)}`,
-      identifierType: identifierType || 'other',
-      contactNumber: contactNumber || '0000000000',
+      name: ticket.mobileUserName || (profile ? profile.name : 'Mobile Visitor'),
+      identifier: finalId,
+      identifierType: identifierType || 'student_id',
+      contactNumber: finalPhone,
       gender: gender || 'other',
-      timeIn: formatLocal(todayStart),
-      timeOut:null,
+      timeIn: new Date().toLocaleTimeString('en-US', { hour12: false }),
       Signature: `Mobile Ticket Pass ${ticket.ticketCode}`,
     });
 
@@ -391,19 +404,18 @@ router.post('/checkin-tickets/:id/confirm', async (req, res) => {
 
     // 2. Mark CheckinTicket as confirmed
     ticket.status = 'confirmed';
-    ticket.loungeID = loungeEntry._id;
     ticket.confirmedAt = new Date();
     ticket.confirmedBy = staffName || 'Admin Staff';
     await ticket.save();
 
     // 3. Update MobileUserProfile streak & total checkins
-    const profile = await calculateAndApplyStreak(ticket.mobileUserId, ticket.mobileUserName, ticket.mobileUserEmail);
+    const updatedProfile = await calculateAndApplyStreak(ticket.mobileUserId, ticket.mobileUserName, ticket.mobileUserEmail);
 
     res.json({
       message: 'Check-in ticket confirmed and logged to Lounge system successfully',
       ticket,
       loungeEntry,
-      userStreak: profile ? profile.streak : 1,
+      userStreak: updatedProfile ? updatedProfile.streak : 1,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -437,33 +449,19 @@ router.post('/checkin-tickets/:id/decline', async (req, res) => {
 // Checkout user from active checkin ticket
 router.post('/checkin-tickets/:id/checkout', async (req, res) => {
   try {
-    const now = new Date();
-
     const ticket = await CheckinTicket.findById(req.params.id);
-
     if (!ticket) {
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
     ticket.status = 'checked_out';
-    ticket.checkedOutAt = now;
+    ticket.checkedOutAt = new Date();
     await ticket.save();
-
-    // Update lounge record
-    if (ticket.loungeID) {
-      await InternetLounge.findByIdAndUpdate(
-        ticket.loungeID,
-        {
-          timeOut: now
-        }
-      );
-    }
 
     res.json({
       message: 'Checked out successfully',
-      ticket
+      ticket,
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

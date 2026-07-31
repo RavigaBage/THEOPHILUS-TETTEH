@@ -158,8 +158,21 @@ exports.deleteQRCode = async (req, res, next) => {
 exports.validateQRToken = async (req, res, next) => {
   try {
     const { token } = req.params;
+    if (token === 'active' || token === 'general') {
+      const activeQR = await QRCode.findOne({ status: 'active' }).sort({ createdAt: -1 });
+      return res.status(200).json({
+        success: true,
+        data: { label: activeQR?.label || 'General Lounge Attendance', token: activeQR?.token || 'active' }
+      });
+    }
+
     const qrCode = await QRCode.findOne({ token });
-    if (!qrCode) return res.status(404).json({ error: 'QR Code not found' });
+    if (!qrCode) {
+      return res.status(200).json({
+        success: true,
+        data: { label: 'General Lounge Attendance', token }
+      });
+    }
     
     const isExpired = qrCode.expiresAt < new Date() || qrCode.status === 'deactivated';
     if (isExpired) {
@@ -175,32 +188,41 @@ exports.validateQRToken = async (req, res, next) => {
 exports.submitAttendance = async (req, res, next) => {
   try {
     const { token } = req.params;
-    const qrCode = await QRCode.findOne({ token });
-    if (!qrCode) return res.status(404).json({ error: 'QR Code not found' });
-    
-    const isExpired = qrCode.expiresAt < new Date() || qrCode.status === 'deactivated';
-    if (isExpired) {
-      return res.status(400).json({ error: 'This QR code has expired.' });
+    let qrCode = null;
+    if (token && token !== 'active' && token !== 'general') {
+      qrCode = await QRCode.findOne({ token });
+    } else {
+      qrCode = await QRCode.findOne({ status: 'active' }).sort({ createdAt: -1 });
     }
 
     const { fullName, idNumber, idType, gender, contact, timeIn, timeOut } = req.body;
 
+    const formattedTimeIn = timeIn
+      ? (typeof timeIn === 'string' && timeIn.includes('T') ? timeIn.split('T')[1] : timeIn)
+      : new Date().toLocaleTimeString('en-US', { hour12: false });
+
+    const formattedTimeOut = timeOut
+      ? (typeof timeOut === 'string' && timeOut.includes('T') ? timeOut.split('T')[1] : timeOut)
+      : '';
+
     const newLounge = await InternetLounge.create({
-      name: fullName,
-      identifier: idNumber,
-      identifierType: idType,
-      gender,
-      contactNumber: contact,
-      timeIn: timeIn || Date.now(),
-      timeOut: timeOut || Date.now(),
-      Signature: fullName, // dummy signature
-      qrToken: token
+      name: fullName || 'Anonymous Visitor',
+      identifier: idNumber || `ID-${Date.now().toString().slice(-6)}`,
+      identifierType: idType || 'student_id',
+      gender: gender || 'other',
+      contactNumber: contact || 'N/A',
+      timeIn: formattedTimeIn,
+      timeOut: formattedTimeOut,
+      Signature: fullName || 'QR Attendance Sign-in',
+      qrToken: qrCode ? qrCode.token : (token || 'GENERAL')
     });
 
-    qrCode.submissionCount += 1;
-    await qrCode.save();
+    if (qrCode) {
+      qrCode.submissionCount = (qrCode.submissionCount || 0) + 1;
+      await qrCode.save();
+    }
 
-    res.status(201).json({ success: true, data: newLounge });
+    res.status(201).json({ success: true, data: newLounge, message: 'Attendance submitted to Lounge successfully' });
   } catch (err) {
     next(err);
   }

@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>IAC MOBILE APP | Adjei Business Hub</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#12201B">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -45,6 +40,7 @@
 
   .content{ flex:1; padding:0 20px 90px; overflow-y:auto; scroll-behavior:smooth; }
 
+  /* ---- Ticket / day pass ---- */
   .pass{
     background:var(--ticket); border-radius:18px; position:relative;
     padding:20px 20px 16px; margin-bottom:18px;
@@ -107,6 +103,7 @@
   .confetti{ position:fixed; width:8px; height:8px; border-radius:50%; background:var(--marigold); pointer-events:none; z-index:100; }
   @keyframes fly{ to{ transform:translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
 
+  /* ---- quick actions ---- */
   .quick{ display:flex; gap:10px; margin-bottom:22px; }
   .qtile{
     flex:1; background:var(--ink-3); border:1px solid #2C4238; border-radius:14px;
@@ -117,10 +114,12 @@
   .qtile .t{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--ticket); }
   .qtile .s{ font-size:11px; color:var(--graphite); margin-top:2px; }
 
+  /* ---- section heading ---- */
   .sec-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
   .sec-title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; color:var(--ticket); }
   .sec-link{ font-size:11px; color:var(--signal); font-family:'IBM Plex Mono',monospace; cursor:pointer; }
 
+  /* ---- board leaderboard container ---- */
   .board{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:6px; margin-bottom:22px; }
 
   /* ---- home carousel slider ---- */
@@ -178,10 +177,12 @@
   .lb-streak{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--marigold); font-weight:700; }
   .lb-row.me{ background:#1B352B; border-radius:10px; border-bottom:none; }
 
+  /* ---- bottom nav (fixed hanging bottom nav bar) ---- */
   .navbar{
-    position:absolute; bottom:14px; left:12px; right:12px; background:var(--ink-3);
-    border:1px solid #2C4238; border-radius:20px; display:flex; padding:6px; z-index:100;
-    box-shadow:0 10px 25px rgba(0,0,0,0.5);
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    width:calc(100% - 24px); max-width:366px; background:var(--ink-3);
+    border:1px solid #3A5246; border-radius:22px; display:flex; padding:6px; z-index:900;
+    box-shadow:0 12px 30px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
   }
   .navitem{ flex:1; text-align:center; padding:7px 0; border-radius:12px; cursor:pointer; transition:background 0.2s; }
   .navitem .ic{ font-size:16px; }
@@ -189,6 +190,7 @@
   .navitem.active{ background:var(--ember); }
   .navitem.active .l{ color:#3A1200; font-weight:700; }
 
+  /* ---- generic card / rooms / report ---- */
   .room-card{ background:var(--ink-3); border:1px solid #2C4238; border-radius:14px; padding:14px; margin-bottom:12px; cursor:pointer; transition:border-color .2s; }
   .room-card:hover{ border-color:var(--signal); }
   .room-card.selected{ border-color:var(--signal); background:#1d382d; }
@@ -212,7 +214,6 @@
   .status{ font-family:'IBM Plex Mono',monospace; font-size:9px; padding:3px 8px; border-radius:6px; text-transform:uppercase; white-space:nowrap; }
   .status.open{ background:var(--marigold); color:#412402; }
   .status.seen{ background:var(--signal); color:#04342C; }
-  .status.pending{ background:var(--marigold); color:#412402; }
   .status.resolved{ background:#639922; color:#173404; }
   .votes{ display:flex; align-items:center; gap:8px; margin-top:10px; }
   .vbtn{ border:1px solid #2C4238; background:none; color:var(--graphite); border-radius:8px; padding:4px 9px; font-size:12px; cursor:pointer; }
@@ -332,9 +333,8 @@
         <div class="room-card" onclick="pickRoom(this,'Training lab', '2')">
           <div class="t">Training lab (Room 2)</div><div class="s">18 workstations · Korean class venue</div>
         </div>
-
+        
         <div id="slotsWrap" class="hidden" style="margin-top:14px;">
-          
           <div class="sec-title" style="margin:12px 0 4px; font-size:13px;" id="slotRoomName">Reservation Details</div>
           
           <div style="margin-bottom:12px;">
@@ -447,6 +447,8 @@
 let mobileUserId = localStorage.getItem('iac_mobile_user_id') || '';
 let mobileUserName = localStorage.getItem('iac_mobile_user_name') || 'Mobile Member';
 let mobileUserEmail = localStorage.getItem('iac_mobile_user_email') || '';
+let mobileUserPhone = localStorage.getItem('iac_mobile_user_phone') || '';
+let mobileUserIdNumber = localStorage.getItem('iac_mobile_user_id_num') || '';
 
 let streak = 0;
 let longestStreak = 0;
@@ -542,9 +544,13 @@ async function checkAuthAndInit() {
         mobileUserId = data.user.mobileUserId;
         mobileUserName = data.user.name;
         mobileUserEmail = data.user.email;
+        mobileUserPhone = data.user.phoneNumber || localStorage.getItem('iac_mobile_user_phone') || '';
+        mobileUserIdNumber = data.user.studentId || localStorage.getItem('iac_mobile_user_id_num') || '';
         localStorage.setItem('iac_mobile_user_id', mobileUserId);
         localStorage.setItem('iac_mobile_user_name', mobileUserName);
         localStorage.setItem('iac_mobile_user_email', mobileUserEmail);
+        localStorage.setItem('iac_mobile_user_phone', mobileUserPhone);
+        localStorage.setItem('iac_mobile_user_id_num', mobileUserIdNumber);
       }
     }
   } catch (e) {
@@ -564,7 +570,12 @@ function updateUserBadge() {
   const emailEl = document.getElementById('userEmailDisplay');
   const initialsEl = document.getElementById('userInitials');
   if (nameEl) nameEl.textContent = mobileUserName;
-  if (emailEl) emailEl.textContent = mobileUserEmail;
+  if (emailEl) {
+    let detailStr = mobileUserEmail;
+    if (mobileUserIdNumber) detailStr += ` • ID: ${mobileUserIdNumber}`;
+    if (mobileUserPhone) detailStr += ` • ${mobileUserPhone}`;
+    emailEl.textContent = detailStr;
+  }
   if (initialsEl) {
     const initials = mobileUserName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'ME';
     initialsEl.textContent = initials;
@@ -604,6 +615,7 @@ function renderHoles(){
   }
 }
 
+// Fetch Profile & Streak
 async function fetchUserProfile() {
   if (!mobileUserId) return;
   try {
@@ -780,7 +792,9 @@ async function startCheckin(){
       body: JSON.stringify({
         mobileUserId,
         mobileUserName,
-        mobileUserEmail
+        mobileUserEmail,
+        mobileUserPhone: mobileUserPhone || localStorage.getItem('iac_mobile_user_phone') || '',
+        mobileUserIdNumber: mobileUserIdNumber || localStorage.getItem('iac_mobile_user_id_num') || ''
       })
     });
 
@@ -1042,6 +1056,7 @@ async function loadLeaderboard(target, limit) {
   } catch(e) { console.warn('Leaderboard error:', e); }
 }
 
+// Issues / Reports
 async function loadIssues(){
   try {
     const res = await authFetch(`/api/iac-mobile/issues?mobileUserId=${mobileUserId}`);
@@ -1066,7 +1081,6 @@ async function loadIssues(){
     const userVote = iss.userVote;
     const isUp = userVote === 'up';
     const isDown = userVote === 'down';
-    const resolved = iss.status === 'resolved';
 
     div.innerHTML = `<div class="issue-top">
       <div>
@@ -1076,9 +1090,9 @@ async function loadIssues(){
       <span class="status ${iss.status}">${iss.status}</span>
     </div>
     <div class="votes">
-      <button class="vbtn ${isUp ? 'active-up' : ''}" ${resolved ? 'disabled' : ''} onclick="voteIssue('${iss._id}', 'up')">▲ Upvote</button>
+      <button class="vbtn ${isUp ? 'active-up' : ''}" onclick="voteIssue('${iss._id}', 'up')">▲ Upvote</button>
       <span class="vcount">${netVote}</span>
-      <button class="vbtn ${isDown ? 'active-down' : ''}" ${resolved ? 'disabled' : ''} onclick="voteIssue('${iss._id}', 'down')">▼ Downvote</button>
+      <button class="vbtn ${isDown ? 'active-down' : ''}" onclick="voteIssue('${iss._id}', 'down')">▼ Downvote</button>
     </div>`;
     el.appendChild(div);
   });
@@ -1093,9 +1107,6 @@ async function voteIssue(id, direction) {
     });
     if (res.ok) {
       loadIssues();
-    } else {
-      const err = await res.json().catch(()=>({}));
-      showToast(err.error || 'Voting is closed on this issue');
     }
   } catch(e) { console.warn(e); }
 }
@@ -1176,6 +1187,7 @@ function showTab(name){
   if(name==='report') loadIssues();
 }
 
+// Redirect / open attendance form
 function openAttendanceForm() {
   window.location.href = '/attendanceForm/index.html';
 }
@@ -1194,6 +1206,7 @@ function triggerConfetti(){
   }
 }
 
+// BOOKING ROOM LOGIC
 let selectedRoomName = null;
 let selectedRoomNum = '3';
 
